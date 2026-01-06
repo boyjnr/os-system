@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pdf_os_premium import gerar_pdf_os_premium
-from routers import financeiro
+from app.routers import financeiro
 
 import os
 import sqlite3
