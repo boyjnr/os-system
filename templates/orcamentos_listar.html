@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>Orçamentos</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th><th>OS</th><th>Cliente</th><th>Status</th><th>Total</th><th>Criado em</th><th style="width:170px">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.id }}</td>
+          <td>#{{ row.os_id }}</td>
+          <td>{{ row.cliente }}</td>
+          <td>{{ row.status }}</td>
+          <td>R$ {{ '%.2f'|format(row.total or 0) }}</td>
+          <td>{{ row.created_at }}</td>
+          <td>
+            <a class="btn" href="/orcamentos/ver/{{ row.id }}">Ver</a>
+            <form method="post" action="/orcamentos/excluir/{{ row.id }}" style="display:inline" onsubmit="return confirm('Excluir orçamento #{{row.id}}?');">
+              <button class="btn" type="submit">Excluir</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      {% if rows|length == 0 %}
+        <tr><td colspan="7">Nenhum orçamento.</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

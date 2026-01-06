@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Listar OS — T.I Extremo{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="header"><span class="title">Ordens de Serviço</span></div>
+  <div class="section">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #e5e7eb">
+          <th style="padding:8px">#</th><th style="padding:8px">Cliente</th>
+          <th style="padding:8px">Equipamento</th><th style="padding:8px">Modelo</th>
+          <th style="padding:8px">Status</th><th style="padding:8px">Criado em</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        <tr style="border-bottom:1px solid #f0f0f0">
+          <td style="padding:8px">{{ r['id'] }}</td>
+          <td style="padding:8px">{{ r['cliente'] }}</td>
+          <td style="padding:8px">{{ r['equipamento'] }}</td>
+          <td style="padding:8px">{{ r['modelo'] }}</td>
+          <td style="padding:8px">{{ r['status'] }}</td>
+          <td style="padding:8px">{{ r['created_at'] }}</td>
+        <td class="actions" style="text-align:right;white-space:nowrap">
+  <a class="btn btn-sm" href="/os/ver/{{ r.id }}">Ver</a>
+  <a class="btn btn-sm btn-secondary" href="/os/editar/{{ r.id }}">Editar</a>
+  <a class="btn btn-sm btn-outline" href="/os/imprimir/{{ r.id }}" target="_blank">Imprimir</a>
+</td></tr>
+      {% else %}
+        <tr><td colspan="6" style="padding:8px">Sem OS cadastradas.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

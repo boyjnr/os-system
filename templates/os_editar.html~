@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h4 mb-3">Editar — {{ os.os_code }}</h2>
+
+<form method="post" action="/os/editar/{{ os.id }}" class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label">Cliente *</label>
+    <input name="cliente" class="form-control" value="{{ os.cliente }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Telefone</label>
+    <input name="telefone" class="form-control" value="{{ os.telefone or '' }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">E-mail</label>
+    <input name="email" type="email" class="form-control" value="{{ os.email or '' }}">
+  </div>
+
+  <div class="col-md-3">
+    <label class="form-label">CEP</label>
+    <input name="cep" class="form-control" value="{{ os.cep or '' }}" id="cep">
+  </div>
+  <div class="col-md-7">
+    <label class="form-label">Endereço</label>
+    <input name="endereco" class="form-control" value="{{ os.endereco or '' }}" id="endereco">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Número</label>
+    <input name="numero" class="form-control" value="{{ os.numero or '' }}" id="numero">
+  </div>
+
+  <div class="col-md-4">
+    <label class="form-label">Equipamento</label>
+    <input name="equipamento" class="form-control" value="{{ os.equipamento or '' }}">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Modelo</label>
+    <input name="modelo" class="form-control" value="{{ os.modelo or '' }}">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Serial/Service Tag</label>
+    <input name="serial" class="form-control" value="{{ os.serial or '' }}">
+  </div>
+
+  <div class="col-md-3">
+    <label class="form-label">Status</label>
+    <select name="status_os" class="form-select">
+      {% set st = (os.status or "Aberta") %}
+      {% for s in ["Aberta","Em análise","Aguardando aprovação","Em execução","Finalizada","Cancelada"] %}
+        <option value="{{ s }}" {% if s==st %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-12">
+    <label class="form-label">Problema / Sintomas *</label>
+    <textarea name="problema" class="form-control" rows="4" required>{{ os.problema }}</textarea>
+  </div>
+
+  <div class="col-12 d-flex gap-2">
+    <button class="btn btn-primary">Salvar</button>
+    <a class="btn btn-secondary" href="/os/ver/{{ os.id }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

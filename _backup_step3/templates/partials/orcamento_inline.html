@@ -1,0 +1,13 @@
+{% if orc is defined and orc %}
+    <div class="orcamento-inline">
+        <p><strong>Subtotal:</strong> R$ {{ ('%0.2f' % (orc.subtotal or 0)).replace('.', ',') }}</p>
+        <p><strong>Desconto:</strong> R$ {{ ('%0.2f' % (orc.desconto or 0)).replace('.', ',') }}</p>
+        <p><strong>Total:</strong> 
+            {{ ('%0.2f' % ((orc.total or (orc.subtotal or 0) - (orc.desconto or 0)))).replace('.', ',') }}
+        </p>
+    </div>
+{% else %}
+    <div class="orcamento-inline">
+        <p><em>Nenhum orçamento vinculado a esta O.S.</em></p>
+    </div>
+{% endif %}

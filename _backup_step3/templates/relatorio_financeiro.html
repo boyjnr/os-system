@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Relatório Financeiro — T.I Extremo{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="header"><span class="title">Relatório Financeiro (stub)</span></div>
+  <div class="section">
+    <p>Período: {{ periodo }} | {{ data_ini }} a {{ data_fim }}</p>
+    <p>Total: R$ {{ "%.2f"|format(tot) }}</p>
+    <div class="alert">Versão mínima apenas para manter o app estável.</div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>Novo Orçamento — OS #{{ os_row.id }} · {{ os_row.cliente }}</h2>
+
+    <form method="post" action="/orcamentos/criar" id="form-orc">
+      <input type="hidden" name="os_id" value="{{ os_row.id }}">
+
+      <div class="grid">
+        <div>
+          <label>Validade (AAAA-MM-DD)</label>
+          <input class="input" name="validade_ate" placeholder="2025-12-31">
+        </div>
+        <div>
+          <label>Observações (visível ao cliente)</label>
+          <input class="input" name="obs_cliente" placeholder="Prazo de execução, forma de pagamento, etc.">
+        </div>
+      </div>
+
+      <h3 style="margin-top:14px">Itens</h3>
+
+      <table class="table" id="tbl-itens" style="width:100%">
+        <thead>
+          <tr>
+            <th style="width:55%">Produto / Descrição</th>
+            <th style="width:10%">Qtd</th>
+            <th style="width:15%">Valor Unit.</th>
+            <th style="width:15%">Total</th>
+            <th style="width:5%"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2"></td>
+            <td style="text-align:right"><b>Subtotal</b></td>
+            <td><input class="input" id="subtotal" readonly></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td colspan="2"></td>
+            <td style="text-align:right"><b>Total</b></td>
+            <td><input class="input" id="total" readonly></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="display:flex; gap:8px; margin-top:8px">
+        <button type="button" class="btn" id="add-linha">+ Adicionar linha</button>
+        <button type="submit" class="btn">Salvar Orçamento</button>
+        <a class="btn" href="/orcamentos/listar">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const tbody = document.querySelector("#tbl-itens tbody");
+  const subtotalEl = document.getElementById("subtotal");
+  const totalEl    = document.getElementById("total");
+  const addBtn     = document.getElementById("add-linha");
+
+  function num(v){ v=(v||"").toString().replace(",","."); let n=parseFloat(v); return isNaN(n)?0:n; }
+  function money(n){ return (Math.round(n*100)/100).toFixed(2); }
+
+  function recalc(){
+    let subt = 0;
+    tbody.querySelectorAll("tr").forEach(tr=>{
+      const q = num(tr.querySelector('input[name="qtd[]"]').value);
+      const p = num(tr.querySelector('input[name="preco[]"]').value);
+      const t = q*p;
+      tr.querySelector('.cell-total').value = money(t);
+      subt += t;
+    });
+    subtotalEl.value = money(subt);
+    totalEl.value    = money(subt);
+  }
+
+  function addRow(desc="", qtd="1", preco="0"){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input class="input" name="desc[]" placeholder="Peça/Serviço" value="${desc}"></td>
+      <td><input class="input" name="qtd[]"  inputmode="decimal" value="${qtd}"></td>
+      <td><input class="input" name="preco[]" inputmode="decimal" value="${preco}"></td>
+      <td><input class="input cell-total" readonly></td>
+      <td><button type="button" class="btn btn-small btn-del">X</button></td>
+    `;
+    tbody.appendChild(tr);
+    tr.addEventListener("input", e=>{
+      if (e.target.name==="qtd[]" || e.target.name==="preco[]") recalc();
+    });
+    tr.querySelector(".btn-del").addEventListener("click", ()=>{
+      tr.remove(); recalc();
+    });
+    recalc();
+  }
+
+  addBtn.addEventListener("click", ()=> addRow());
+
+  // começa com 1 linha vazia
+  addRow("", "1", "0");
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,330 @@
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import stringWidth
+
+W, H = A4
+
+# ---- helpers ---------------------------------------------------------------
+def _wrap_text_for_width(cnv, text, max_w, font='Helvetica', size=9):
+    words = (text or '').split()
+    lines, cur = [], ''
+    for w in words:
+        test = (cur + ' ' + w).strip()
+        wpt = stringWidth(test, font, size)
+        if wpt <= max_w or not cur:
+            cur = test
+        else:
+            lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    return lines
+
+def _money(v):
+    try:
+        return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return "R$ 0,00"
+
+def _label_val(cnv, x, y, label, val, bold=False):
+    lab = (label.rstrip(':') + ':') if label else ''
+    if bold:
+        cnv.setFont('Helvetica-Bold', 9)
+    else:
+        cnv.setFont('Helvetica', 9)
+    cnv.drawString(x, y, lab)
+    cnv.setFont('Helvetica', 9)
+    cnv.drawString(x + 28*mm, y, str(val or '-'))
+
+def gerar_pdf_os_premium(dados: dict, destino: str):
+    now_str = datetime.now().strftime('%d/%m/%Y %H:%M')
+    c = canvas.Canvas(destino, pagesize=A4)
+    m = 18*mm
+
+    # Barra superior laranja
+    c.setFillColor(colors.HexColor('#f97316'))
+    c.rect(0, H-20*mm, W, 20*mm, stroke=0, fill=1)
+
+    # Título (esquerda, branco)
+    c.setFillColor(colors.white)
+    c.setFont('Helvetica-Bold', 12)
+    c.drawString(m, H-10*mm, 'T.I Extremo — Soluções em TI Premium')
+
+    # Slogan (esquerda, branco, menor)
+    c.setFont('Helvetica', 8.5)
+    c.drawString(m, H-16*mm, 'Reparo, Venda, Troca & Upgrade Notebook, Desktop e PcGamers')
+
+    # Box branco da avaliação (direita)
+    box_w = 68*mm
+    box_h = 10*mm
+    c.setFillColor(colors.white)
+    c.roundRect(W - m - box_w, H-17*mm, box_w, box_h, 2*mm, stroke=0, fill=1)
+    
+    # Texto com estrela dourada
+    c.setFont('Helvetica-Bold', 9)
+    text_y = H-12.5*mm
+    
+    # Calcula posição para centralizar
+    star = "★ "
+    text_part1 = "Máxima Avaliação no "
+    
+    star_w = stringWidth(star, 'Helvetica-Bold', 9)
+    text1_w = stringWidth(text_part1, 'Helvetica-Bold', 9)
+    
+    # Largura das letras do Google
+    google_letters = ['G', 'o', 'o', 'g', 'l', 'e']
+    google_colors = ['#4285F4', '#EA4335', '#FBBC04', '#4285F4', '#34A853', '#EA4335']
+    google_w = sum([stringWidth(l, 'Helvetica-Bold', 9) for l in google_letters])
+    
+    total_width = star_w + text1_w + google_w
+    start_x = W - m - box_w/2 - total_width/2
+    
+    # Estrela dourada
+    c.setFillColor(colors.HexColor('#f59e0b'))
+    c.drawString(start_x, text_y, star)
+    
+    # "Máxima Avaliação no" em preto
+    c.setFillColor(colors.HexColor('#0f172a'))
+    c.drawString(start_x + star_w, text_y, text_part1)
+    
+    # "Google" com cada letra em sua cor
+    x_pos = start_x + star_w + text1_w
+    for i, letter in enumerate(google_letters):
+        c.setFillColor(colors.HexColor(google_colors[i]))
+        c.drawString(x_pos, text_y, letter)
+        x_pos += stringWidth(letter, 'Helvetica-Bold', 9)
+
+    # Código da OS (abaixo da barra, esquerda)
+    c.setFillColor(colors.HexColor('#0f172a'))
+    c.setFont('Helvetica-Bold', 14)
+    c.drawString(m, H-30*mm, dados.get('os_code', 'OS'))
+    
+    # Data (abaixo do código)
+    c.setFont('Helvetica', 9)
+    c.setFillColor(colors.HexColor('#6b7280'))
+    c.drawString(m, H-36*mm, 'Data: ' + now_str)
+
+    c.setFont('Helvetica', 8)
+    c.setFillColor(colors.HexColor('#374151'))
+    y = H-46*mm
+    
+    # Caixa: Dados do cliente
+    c.setFillColor(colors.HexColor("#111827"))
+    c.setFont("Helvetica-Bold", 10.5)
+    c.drawString(m, y, "Dados do Cliente")
+    y -= 6*mm
+    c.setFillColor(colors.HexColor("#0f172a"))
+
+    _label_val(c, m, y, "Cliente", dados.get("cliente")); y -= 5.2*mm
+    _label_val(c, m, y, "Telefone", dados.get("telefone")); y -= 5.2*mm
+    _label_val(c, m, y, "E-mail", dados.get("email")); y -= 5.2*mm
+    _label_val(c, m, y, "Endereço", dados.get("endereco")); y -= 9*mm
+
+    # Equipamento
+    c.setFillColor(colors.HexColor("#111827"))
+    c.setFont("Helvetica-Bold", 10.5)
+    c.drawString(m, y, "Equipamento")
+    y -= 6*mm
+    c.setFillColor(colors.HexColor("#0f172a"))
+    _label_val(c, m, y, "Tipo", dados.get("equipamento")); y -= 5.2*mm
+    _label_val(c, m, y, "Modelo", dados.get("modelo")); y -= 5.2*mm
+    _label_val(c, m, y, "Serial/Service Tag", dados.get("serial")); y -= 8.5*mm
+
+    # Problema / Sintomas (caixa dinâmica)
+    c.setFillColor(colors.HexColor("#111827"))
+    c.setFont("Helvetica-Bold", 10.5)
+    c.drawString(m, y, "Problema / Sintomas")
+    y -= 6.5*mm
+
+    txt = (dados.get("problema") or "").strip() or "-"
+    wrap = _wrap_text_for_width(c, txt, W - 2*m - 6*mm)
+    
+    # Altura dinâmica baseada no número de linhas
+    num_lines = len(wrap)
+    box_h = max(12*mm, min(50*mm, num_lines * 4.2*mm + 8*mm))
+    
+    c.setStrokeColor(colors.HexColor("#e5e7eb"))
+    c.roundRect(m, y - box_h, W - 2*m, box_h, 4*mm, stroke=1, fill=0)
+
+    c.setFont("Helvetica", 9)
+    c.setFillColor(colors.HexColor("#0f172a"))
+    ty = y - 5*mm
+    for ln in wrap:
+        if ty < (y - box_h + 5*mm): break
+        c.drawString(m + 3*mm, ty, ln)
+        ty -= 4.2*mm
+    y = y - box_h - 8*mm
+
+    # Orçamento (se existir)
+    orc = dados.get("orcamento") or {}
+    itens = orc.get("itens") or []
+    
+    if itens:
+        # Verifica espaço disponível
+        if y < 80*mm:
+            c.showPage()
+            y = H - 30*mm
+        
+        c.setFillColor(colors.HexColor("#111827"))
+        c.setFont("Helvetica-Bold", 10.5)
+        c.drawString(m, y, "Orçamento")
+        y -= 6*mm
+        
+        # Cabeçalho da tabela
+        x_desc = m + 2*mm
+        x_qtd = x_desc + 100*mm
+        x_vu = x_qtd + 22*mm
+        x_tot = x_vu + 28*mm
+        
+        c.setFont("Helvetica-Bold", 9)
+        c.setFillColor(colors.HexColor("#374151"))
+        c.drawString(x_desc, y, "Descrição")
+        c.drawString(x_qtd, y, "Qtd.")
+        c.drawString(x_vu, y, "V. Unit.")
+        c.drawString(x_tot, y, "Total")
+        
+        y -= 1*mm
+        c.setStrokeColor(colors.HexColor("#e5e7eb"))
+        c.line(m, y, W-m, y)
+        y -= 5*mm
+        
+        # Itens
+        c.setFont("Helvetica", 9)
+        c.setFillColor(colors.HexColor("#0f172a"))
+        
+        for it in itens:
+            desc = str(it.get("descricao") or "-")
+            qtd = int(it.get("quantidade") or 1)
+            vu = float(it.get("valor_unitario") or 0.0)
+            tot = qtd * vu
+            
+            max_w = x_qtd - x_desc - 5*mm
+            lines = _wrap_text_for_width(c, desc, max_w)
+            item_height = len(lines) * 4.5*mm
+            
+            # Verifica espaço
+            if y - item_height < 50*mm:
+                c.showPage()
+                y = H - 30*mm
+                # Redesenha cabeçalho
+                c.setFont("Helvetica-Bold", 9)
+                c.drawString(x_desc, y, "Descrição")
+                c.drawString(x_qtd, y, "Qtd.")
+                c.drawString(x_vu, y, "V. Unit.")
+                c.drawString(x_tot, y, "Total")
+                y -= 1*mm
+                c.line(m, y, W-m, y)
+                y -= 5*mm
+                c.setFont("Helvetica", 9)
+            
+            ty = y
+            for line in lines:
+                c.drawString(x_desc, ty, line)
+                ty -= 4.5*mm
+            
+            c.drawString(x_qtd, y, str(qtd))
+            c.drawString(x_vu, y, _money(vu))
+            c.drawString(x_tot, y, _money(tot))
+            
+            y -= item_height + 2*mm
+        
+        # Linha separadora
+        c.line(m, y, W-m, y)
+        y -= 7*mm
+        
+        # Totais
+        c.setFont("Helvetica", 9)
+        c.drawString(W - 80*mm, y, "Subtotal:")
+        c.drawString(W - 40*mm, y, _money(orc.get("subtotal", 0.0)))
+        y -= 5*mm
+        
+        c.drawString(W - 80*mm, y, "Desconto:")
+        c.drawString(W - 40*mm, y, _money(orc.get("desconto", 0.0)))
+        y -= 5*mm
+        
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(W - 80*mm, y, "Total:")
+        c.drawString(W - 40*mm, y, _money(orc.get("total", 0.0)))
+        
+        y -= 10*mm
+
+    # Assinaturas
+    if y < 50*mm:
+        c.showPage()
+        y = H - 30*mm
+    
+    c.setStrokeColor(colors.HexColor("#e5e7eb"))
+    c.line(m, y, m+70*mm, y)
+    c.line(W-m-70*mm, y, W-m, y)
+    c.setFont("Helvetica", 8.7)
+    c.setFillColor(colors.HexColor("#374151"))
+    c.drawString(m, y - 5*mm, "Assinatura do Cliente")
+    c.drawRightString(W-m, y - 5*mm, "Assinatura do Atendente")
+    
+    y -= 12*mm
+
+    # Avisos (título + aceite + lista com wrap)
+    c.setFont("Helvetica-Bold", 10)
+    c.setFillColor(colors.HexColor("#111827"))
+    c.drawString(m, y, "Avisos:")
+    
+    # Aceite integrado aos avisos
+    c.setFont("Helvetica", 8.3)
+    c.setFillColor(colors.HexColor("#6b7280"))
+    aceite = ("Aceite: Assinar ou responder 'De acordo/OK' via WhatsApp autoriza o atendimento "
+              "e os termos desta OS.")
+    c.drawString(m, y - 5*mm, aceite)
+    
+    c.setFont("Helvetica", 9)
+    c.setFillColor(colors.HexColor("#0f172a"))
+
+    avisos = [
+        ("#6b7280", "●", "Esta OS refere-se apenas à abertura do chamado; o orçamento será enviado separadamente."),
+        ("#6b7280", "●", "Equipamentos não retirados em até 90 dias poderão ser vendidos para cobertura de custos."),
+        ("#f59e0b", "★", "Garantia de 1 ano sobre os serviços executados — qualidade premium com preço justo."),
+        ("#10b981", "■", "Compromisso Verde: reutilizamos peças quando viável e destinamos resíduos de forma responsável. Cuidamos do planeta com você.")
+    ]
+    ty = y - 10*mm
+    left_symbol = m + 1*mm
+    left_text = m + 7*mm
+    right_margin = 18*mm
+    max_w = W - right_margin - left_text
+
+    for color, symbol, texto in avisos:
+        # Símbolo colorido (posição fixa à esquerda)
+        c.setFillColor(colors.HexColor(color))
+        c.setFont('Helvetica', 10)
+        c.drawString(left_symbol, ty, symbol)
+
+        # Texto do aviso
+        c.setFillColor(colors.HexColor("#0f172a"))
+        c.setFont("Helvetica", 9)
+        lines = _wrap_text_for_width(c, texto, max_w, font="Helvetica", size=9)
+        
+        for i, ln in enumerate(lines):
+            c.drawString(left_text, ty, ln)
+            ty -= 4.2*mm
+        
+        ty -= 1.5*mm  # Espaço extra entre avisos
+
+    # Destaque garantia
+    c.setFont("Helvetica-Bold", 9.4)
+    c.setFillColor(colors.HexColor("#0f172a"))
+    c.drawCentredString(W/2, 22*mm, "★ ÚNICA assistência com 1 ano de garantia nos serviços.")
+
+    # Rodapé (endereço + contato)
+    c.setFont("Helvetica", 8)
+    c.setFillColor(colors.HexColor("#6b7280"))
+    c.drawCentredString(W/2, 16*mm, "Av. Eng. Luís Carlos Berrini, 1748 — São Paulo–SP — (11) 98844-0181")
+    c.drawCentredString(W/2, 12*mm, "orlando@tiextremo.com.br — www.tiextremo.com.br")
+
+    # Página
+    c.setFont("Helvetica", 8)
+    c.drawRightString(W-18*mm, 12*mm, f"Página {c.getPageNumber()}")
+
+    c.showPage()
+    c.save()

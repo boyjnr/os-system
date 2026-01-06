@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Nova Ordem de Serviço — TI Extremo{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="header"><h1>Nova Ordem de Serviço</h1></div>
+  <form action="/os/criar" method="post" enctype="multipart/form-data">
+    <div class="grid">
+      <div class="field col-6"><label>Cliente *</label><input name="cliente" placeholder="Nome completo ou Razão Social" required></div>
+      <div class="field col-6"><label>Telefone</label><input name="telefone" placeholder="(11) 98888-8888"></div>
+
+      <div class="field col-6"><label>E-mail</label><input name="email" placeholder="cliente@exemplo.com"></div>
+      <div class="field col-6">
+        <label>CEP</label>
+        <div class="row" style="gap:8px">
+          <input id="cep" placeholder="00000-000" style="max-width:200px">
+          <button class="btn btn-secondary" type="button" id="btn-cep">Buscar CEP</button>
+        </div>
+        <div class="help">Usa ViaCEP para preencher o endereço automaticamente.</div>
+      </div>
+
+      <div class="field col-12"><label>Endereço</label><input name="endereco" placeholder="Rua, nº, bairro, cidade"></div>
+
+      <div class="field col-4"><label>Equipamento</label>
+        <select name="equipamento">
+          <option>Notebook</option><option>Desktop</option><option>Servidor</option><option>Impressora</option>
+        </select>
+      </div>
+      <div class="field col-4"><label>Modelo</label><input name="modelo" placeholder="Ex.: Dell G15, Acer Nitro 5"></div>
+      <div class="field col-4"><label>Serial / Service Tag</label><input name="serial" placeholder="Ex.: ABC123XYZ"></div>
+
+      <div class="field col-12"><label>Problema / Sintomas *</label>
+        <textarea name="problema" rows="5" placeholder="Descreva o defeito, sintomas e quando ocorre" required></textarea>
+      </div>
+
+      <div class="field col-12"><label>Anexo (opcional)</label>
+        <input type="file" name="anexo" accept=".jpg,.jpeg,.png,.pdf,.txt,.log">
+        <div class="help">Máx 5 MB. Formatos comuns: JPG, PNG, PDF, TXT, LOG.</div>
+      </div>
+    </div>
+
+    <div class="row" style="gap:8px">
+      <button class="btn btn-primary" type="submit">Salvar OS</button>
+      <a class="btn btn-secondary" href="/os/listar">Ver últimas OS</a>
+    </div>
+  </form>
+</div>
+
+<script>
+document.getElementById('btn-cep')?.addEventListener('click', async ()=>{
+  try{
+    const raw = (document.getElementById('cep').value||'').replace(/\D/g,'');
+    if (raw.length!==8){ alert('CEP inválido'); return; }
+    const r = await fetch('https://viacep.com.br/ws/'+raw+'/json/');
+    const d = await r.json();
+    if (d.erro){ alert('CEP não encontrado'); return; }
+    const txt = [d.logradouro, d.bairro, (d.localidade||'')+' - '+(d.uf||'')].filter(Boolean).join(', ');
+    const end = document.querySelector('input[name="endereco"]');
+    if (end){ end.value = txt; end.focus(); }
+  }catch(e){ alert('Falha ao consultar CEP'); }
+});
+</script>
+{% endblock %}

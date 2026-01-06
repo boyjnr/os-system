@@ -1,0 +1,10 @@
+
+<!doctype html><meta charset="utf-8">
+<h1 style="font-family:sans-serif">OS {{ os.os_code or os.id }}</h1>
+<ul style="font-family:sans-serif;line-height:1.6">
+  <li><b>Cliente:</b> {{ os.cliente }}</li>
+  <li><b>Telefone:</b> {{ os.telefone }}</li>
+  <li><b>Equipamento:</b> {{ os.equipamento }} — {{ os.modelo }}</li>
+  <li><b>Endereço:</b> {{ os.endereco }}</li>
+  <li><b>Status:</b> {{ os.status }}</li>
+</ul>

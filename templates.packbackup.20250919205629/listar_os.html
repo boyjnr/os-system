@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Lista de OS{% endblock %}
+{% block content %}
+<h2>📋 Ordens de Serviço</h2>
+<table border="1" cellspacing="0" cellpadding="5">
+  <tr><th>ID</th><th>Cliente</th><th>Equipamento</th><th>Status</th><th>Ações</th></tr>
+  {% for os in ordens %}
+  <tr>
+    <td>{{ os.id }}</td>
+    <td>{{ os.nome_cliente }}</td>
+    <td>{{ os.equipamento }}</td>
+    <td>{{ os.status }}</td>
+    <td>
+      <a href="/os/ver/{{ os.id }}">Ver</a> |
+      <a href="/os/editar/{{ os.id }}">Editar</a> |
+      <a href="/os/imprimir/{{ os.id }}">Imprimir</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

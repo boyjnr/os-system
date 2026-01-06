@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+
+  <div style="background:#ff6600;color:white;padding:12px;text-align:center;">
+    <h2 style="margin:0;">T.I Extremo – Soluções em TI Premium</h2>
+    <p style="margin:0;font-size:14px;">"A melhor e mais conceituada assistência em TI.<br>Garantia premium de 1 ano em todos os serviços.<br>Parceria, honestidade e transparência são nosso objetivo."</p>
+    <p style="margin:4px 0 0;font-size:13px;">Av. Engenheiro Luís Carlos Berrini, 1748 – CJ 2110 – São Paulo/SP<br>Tel: (11) 98844-0181 | orlando@tiextremo.com.br | www.tiextremo.com.br</p>
+  </div>
+<div style="background:#ff6600;padding:10px;">
+  <a href="/os/nova" style="color:white;margin-right:15px;">Nova OS</a>
+  <a href="/os/listar" style="color:white;margin-right:15px;">Listar OS</a>
+  <a href="/relatorios" style="color:white;margin-right:15px;">Relatórios</a>
+</div>
+    <h1>Ordem de Serviço Nº {{ "%06d"|format(os.id_os) }}</h1>
+
+    <div class="box">
+        <p><span class="label">ID Cliente:</span> {{ os.id_cliente }}</p>
+        <p><span class="label">Cliente:</span> {{ os.nome_cliente }}</p>
+        <p><span class="label">Telefone:</span> {{ os.telefone }}</p>
+        <p><span class="label">Email:</span> {{ os.email }}</p>
+        <p><span class="label">Endereço:</span> {{ os.endereco }}</p>
+    </div>
+
+    <div class="box">
+        <p><span class="label">Equipamento:</span> {{ os.equipamento }}</p>
+        <p><span class="label">Modelo:</span> {{ os.marca_modelo }}</p>
+        <p><span class="label">Número de Série:</span> {{ os.numero_serie }}</p>
+        <p><span class="label">Problema:</span> {{ os.problema_relatado }}</p>
+    </div>
+
+    <div class="box">
+        <p><span class="label">Status:</span> {{ os.status }}</p>
+        <p><span class="label">Prioridade:</span> {{ os.prioridade }}</p>
+        <p><span class="label">Valor:</span> R$ {{ "%.2f"|format(os.valor_total) }}</p>
+        <p><span class="label">Forma de Pagamento:</span> {{ os.forma_pagamento }}</p>
+        <p><span class="label">Parcelas:</span> {{ os.parcelas }}</p>
+        <p><span class="label">Data Abertura:</span> {{ os.data_abertura }}</p>
+        <p><span class="label">Data Fechamento:</span> {{ os.data_fechamento }}</p>
+    </div>
+
+    <button onclick="window.print()" class="no-print">Imprimir</button>
+    <a href="/os/listar" class="no-print">Voltar</a>
+{% endblock %}

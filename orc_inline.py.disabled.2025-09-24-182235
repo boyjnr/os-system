@@ -1,0 +1,200 @@
+import json
+
+from fastapi import Request
+from fastapi.responses import RedirectResponse
+
+# Importa app e função de DB do projeto principal
+try:
+    from main import app, get_db_connection
+except Exception:  # fallback se houver pacote
+    from .main import app, get_db_connection  # type: ignore
+
+def _ensure_orc_columns(conn):
+    """
+    Garante colunas na tabela de OS:
+      orcamento_json TEXT, orcamento_status TEXT,
+      orcamento_subtotal REAL, orcamento_desconto REAL, orcamento_total REAL
+    Suporta SQLite/MySQL de forma simples.
+    """
+    cur = conn.cursor()
+    # Detectar tabela
+    tbl = None
+    for t in ("os","ordens_servico"):
+        try:
+            cur.execute(f"PRAGMA table_info({t})")
+            cols = [r[1] for r in cur.fetchall()]
+            if cols:
+                tbl = t; break
+        except Exception:
+            pass
+    if tbl is None:
+        try:
+            cur.execute("SELECT table_name FROM information_schema.tables WHERE table_name in ('os','ordens_servico')")
+            r = cur.fetchone()
+            if r: tbl = r[0]
+        except Exception:
+            pass
+    if tbl is None:
+        print("⚠ orc_inline: tabela de OS não encontrada ('os' ou 'ordens_servico').")
+        return
+
+    def has(col):
+        try:
+            cur.execute(f"PRAGMA table_info({tbl})")
+            cols = [r[1] for r in cur.fetchall()]
+            return col in cols
+        except Exception:
+            try:
+                cur.execute("SELECT COLUMN_NAME FROM information_schema.columns WHERE table_name=%s", (tbl,))
+                return any(r[0]==col for r in cur.fetchall())
+            except Exception:
+                return False
+
+    add = []
+    for c,t in (("orcamento_json","TEXT"),
+                ("orcamento_status","TEXT"),
+                ("orcamento_subtotal","REAL"),
+                ("orcamento_desconto","REAL"),
+                ("orcamento_total","REAL")):
+        if not has(c):
+            add.append(f"ADD COLUMN {c} {t}")
+    if not add:
+        return
+
+    # Tenta SQLite (um por um)
+    try:
+        for stmt in add:
+            cur.execute(f"ALTER TABLE {tbl} {stmt}")
+        conn.commit()
+        print(f"✔ orc_inline: colunas adicionadas em {tbl} (SQLite).")
+        return
+    except Exception:
+        pass
+    # Tenta MySQL (todos de uma vez)
+    try:
+        cur.execute(f"ALTER TABLE {tbl} " + ", ".join(add))
+        conn.commit()
+        print(f"✔ orc_inline: colunas adicionadas em {tbl} (MySQL).")
+    except Exception as e:
+        print("⚠ orc_inline: falha ao adicionar colunas:", e)
+
+def _table_name(conn):
+    cur = conn.cursor()
+    try:
+        cur.execute("PRAGMA table_info(os)")
+        if cur.fetchall():
+            return "os"
+    except Exception:
+        pass
+    return "ordens_servico"
+
+def _parse_itens_from_form(form):
+    # form tem campos itens[][descricao], itens[][qtd], itens[][unit]
+    descs = [v for k,v in form.items() if k.startswith("itens[][descricao]")]
+    qtds  = [v for k,v in form.items() if k.startswith("itens[][qtd]")]
+    units = [v for k,v in form.items() if k.startswith("itens[][unit]")]
+    n = max(len(descs),len(qtds),len(units))
+    itens=[]
+    for i in range(n):
+        d = (descs[i] if i<len(descs) else "").strip()
+        q = float(qtds[i]) if i<len(qtds) and qtds[i] else 0.0
+        u = float(units[i]) if i<len(units) and units[i] else 0.0
+        if d or q or u:
+            itens.append({"descricao":d,"qtd":q,"unit":u})
+    subtotal = sum(x["qtd"]*x["unit"] for x in itens)
+    return itens, subtotal
+
+@app.on_event("startup")
+async def _orc_bootstrap():
+    try:
+        conn = get_db_connection()
+        _ensure_orc_columns(conn)
+    except Exception as e:
+        print("⚠ orc_inline bootstrap:", e)
+    finally:
+        try: conn.close()
+        except: pass
+
+@app.post("/os/{os_id}/orcamento/salvar")
+async def os_orcamento_salvar(request: Request, os_id: int):
+    form = await request.form()
+    itens, subtotal = _parse_itens_from_form(form)
+    desconto = float(form.get('desconto') or 0)
+    total = max(subtotal - desconto, 0.0)
+
+    conn = get_db_connection(); cur = conn.cursor()
+    tbl = _table_name(conn)
+    # status atual
+    try:
+        if tbl=="os":
+            cur.execute(f"SELECT status FROM {tbl} WHERE id=?", (os_id,))
+        else:
+            cur.execute(f"SELECT status FROM {tbl} WHERE id=%s", (os_id,))
+        row = cur.fetchone()
+        status_atual = row[0] if row else "Aberta"
+        novo_status = "Em Orçamento" if status_atual == "Aberta" else status_atual
+
+        dados = json.dumps(itens, ensure_ascii=False)
+        if tbl=="os":
+            cur.execute(f"""UPDATE {tbl}
+                            SET orcamento_json=?, orcamento_subtotal=?, orcamento_desconto=?,
+                                orcamento_total=?, orcamento_status=?, updated_at=CURRENT_TIMESTAMP
+                            WHERE id=?""",
+                        (dados, subtotal, desconto, total, novo_status, os_id))
+        else:
+            cur.execute(f"""UPDATE {tbl}
+                            SET orcamento_json=%s, orcamento_subtotal=%s, orcamento_desconto=%s,
+                                orcamento_total=%s, orcamento_status=%s
+                            WHERE id=%s""",
+                        (dados, subtotal, desconto, total, novo_status, os_id))
+        conn.commit()
+    finally:
+        try: conn.close()
+        except: pass
+
+    return RedirectResponse(url=f"/os/abrir/{os_id}", status_code=303)
+
+@app.get("/os/{os_id}/enviar_aprovacao")
+async def os_enviar_aprovacao(os_id:int):
+    conn = get_db_connection(); cur = conn.cursor()
+    tbl = _table_name(conn)
+    try:
+        if tbl=="os":
+            cur.execute(f"UPDATE {tbl} SET orcamento_status=?, status=? WHERE id=?", ("Aguardando Aprovação","Aguardando Aprovação", os_id))
+        else:
+            cur.execute(f"UPDATE {tbl} SET orcamento_status=%s, status=%s WHERE id=%s", ("Aguardando Aprovação","Aguardando Aprovação", os_id))
+        conn.commit()
+    finally:
+        try: conn.close()
+        except: pass
+    return RedirectResponse(url=f"/os/abrir/{os_id}", status_code=303)
+
+@app.get("/os/{os_id}/aprovar")
+async def os_aprovar(os_id:int):
+    conn = get_db_connection(); cur = conn.cursor()
+    tbl = _table_name(conn)
+    try:
+        if tbl=="os":
+            cur.execute(f"UPDATE {tbl} SET orcamento_status=?, status=? WHERE id=?", ("Aprovada","Aprovada", os_id))
+        else:
+            cur.execute(f"UPDATE {tbl} SET orcamento_status=%s, status=%s WHERE id=%s", ("Aprovada","Aprovada", os_id))
+        conn.commit()
+    finally:
+        try: conn.close()
+        except: pass
+    return RedirectResponse(url=f"/os/abrir/{os_id}", status_code=303)
+
+@app.get("/os/{os_id}/reprovar")
+async def os_reprovar(os_id:int):
+    conn = get_db_connection(); cur = conn.cursor()
+    tbl = _table_name(conn)
+    try:
+        if tbl=="os":
+            cur.execute(f"UPDATE {tbl} SET orcamento_status=?, status=? WHERE id=?", ("Reprovada","Reprovada", os_id))
+        else:
+            cur.execute(f"UPDATE {tbl} SET orcamento_status=%s, status=%s WHERE id=%s", ("Reprovada","Reprovada", os_id))
+        conn.commit()
+    finally:
+        try: conn.close()
+        except: pass
+    return RedirectResponse(url=f"/os/abrir/{os_id}", status_code=303)

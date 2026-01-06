@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Editar OS — #{{ os["id"] }}</h2>
+  <form method="post" action="/os/atualizar/{{ os['id'] }}">
+    <div class="section">
+      <h3>Dados do Cliente</h3>
+      <div class="grid">
+        <div><label>Cliente</label><input class="input" name="cliente" value="{{ os['cliente'] }}" required></div>
+        <div><label>Telefone</label><input class="input" name="telefone" value="{{ os['telefone'] or '' }}"></div>
+        <div><label>E-mail</label><input class="input" type="email" name="email" value="{{ os['email'] or '' }}"></div>
+        <div><label>Endereço</label><input class="input" name="endereco" value="{{ os['endereco'] or '' }}"></div>
+      </div>
+    </div>
+    <div class="section">
+      <h3>Dados do Equipamento</h3>
+      <div class="grid">
+        <div><label>Equipamento</label>
+          <select class="input" name="equipamento">
+            {% set eq = (os['equipamento'] or 'Notebook') %}
+            {% for opt in ['Notebook','PC Gamer','All-in-one','Servidor','Outros'] %}
+              <option {{ 'selected' if opt==eq else '' }}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div><label>Marca/Modelo</label><input class="input" name="modelo" value="{{ os['modelo'] or '' }}"></div>
+        <div><label>Número de Série</label><input class="input" name="serial" value="{{ os['serial'] or '' }}"></div>
+        <div><label>Status do Equipamento</label>
+          {% set st = (os['status'] or 'Funcionando') %}
+          <select class="input" name="status">
+            {% for opt in ['Funcionando','Não liga','Intermitente','Com artefatos'] %}
+              <option {{ 'selected' if opt==st else '' }}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label>Problema Relatado</label>
+        <textarea class="input" name="problema" required>{{ os['problema'] }}</textarea>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:16px">
+      <button class="btn" type="submit">Salvar alterações</button>
+      <a class="btn" style="background:#888" href="/os/ver/{{ os['id'] }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

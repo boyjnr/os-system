@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+
+  <div style="background:#ff6600;color:white;padding:12px;text-align:center;">
+    <h2 style="margin:0;">T.I Extremo – Soluções em TI Premium</h2>
+    <p style="margin:0;font-size:14px;">"A melhor e mais conceituada assistência em TI.<br>Garantia premium de 1 ano em todos os serviços.<br>Parceria, honestidade e transparência são nosso objetivo."</p>
+    <p style="margin:4px 0 0;font-size:13px;">Av. Engenheiro Luís Carlos Berrini, 1748 – CJ 2110 – São Paulo/SP<br>Tel: (11) 98844-0181 | orlando@tiextremo.com.br | www.tiextremo.com.br</p>
+  </div>
+<div style="background:#ff6600;padding:10px;">
+  <a href="/os/nova" style="color:white;margin-right:15px;">Nova OS</a>
+  <a href="/os/listar" style="color:white;margin-right:15px;">Listar OS</a>
+  <a href="/relatorios" style="color:white;margin-right:15px;">Relatórios</a>
+</div>
+    <h1>✏️ Editar Ordem de Serviço #{{ "%06d"|format(os.id_os) }}</h1>
+
+    <form method="post" action="/os/atualizar/{{ "%06d"|format(os.id_os) }}">
+        <label>ID Cliente</label>
+        <input type="text" value="{{ os.id_cliente }}" class="readonly" readonly>
+
+        <label>Cliente</label>
+        <input type="text" name="nome_cliente" value="{{ os.nome_cliente }}" required>
+
+        <label>Telefone</label>
+        <input type="text" name="telefone" value="{{ os.telefone }}">
+
+        <label>Email</label>
+        <input type="email" name="email" value="{{ os.email }}">
+
+        <label>CEP</label>
+        <input type="text" name="cep" value="{{ os.cep }}">
+
+        <label>Endereço</label>
+        <input type="text" name="endereco" value="{{ os.endereco }}">
+
+        <label>Equipamento</label>
+        <input type="text" name="equipamento" value="{{ os.equipamento }}" required>
+
+        <label>Marca/Modelo</label>
+        <input type="text" name="marca_modelo" value="{{ os.marca_modelo }}">
+
+        <label>Número de Série</label>
+        <input type="text" name="numero_serie" value="{{ os.numero_serie }}">
+
+        <label>Problema Relatado</label>
+        <textarea name="problema_relatado">{{ os.problema_relatado }}</textarea>
+
+        <label>Status</label>
+        <select name="status">
+            <option {% if os.status=="Em Análise" %}selected{% endif %}>Em Análise</option>
+            <option {% if os.status=="Em Andamento" %}selected{% endif %}>Em Andamento</option>
+            <option {% if os.status=="Concluída" %}selected{% endif %}>Concluída</option>
+        </select>
+
+        <label>Prioridade</label>
+        <select name="prioridade">
+            <option {% if os.prioridade=="Baixa" %}selected{% endif %}>Baixa</option>
+            <option {% if os.prioridade=="Média" %}selected{% endif %}>Média</option>
+            <option {% if os.prioridade=="Alta" %}selected{% endif %}>Alta</option>
+        </select>
+
+        <label>Valor Total</label>
+        <input type="number" step="0.01" name="valor_total" value="{{ os.valor_total }}">
+
+        <label>Forma de Pagamento</label>
+        <input type="text" name="forma_pagamento" value="{{ os.forma_pagamento }}">
+
+        <label>Parcelas</label>
+        <input type="number" name="parcelas" value="{{ os.parcelas }}">
+
+        <button type="submit" class="btn salvar">Salvar Alterações</button>
+        <a href="/os/listar" class="btn cancelar">Cancelar</a>
+    </form>
+{% endblock %}

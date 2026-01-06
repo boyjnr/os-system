@@ -1,0 +1,76 @@
+{% set pm = print_mode or false %}
+<style>
+  .orc-wrap{max-width:980px;margin:0 auto}
+  .orc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+  .orc-title{font-size:22px;font-weight:700}
+  .orc-meta{color:#666;font-size:13px}
+  .orc-actions{text-align:right}
+  .orc-actions .btn{margin-left:6px}
+  table.doc{width:100%;border-collapse:collapse;margin-top:10px}
+  table.doc th,table.doc td{padding:10px 12px;border-bottom:1px solid #eee}
+  table.doc th{background:#fafafa;text-align:left}
+  .totals{margin-top:12px;text-align:right;font-weight:700}
+  .muted{color:#666}
+  {% if pm %}
+    nav,.header,.footer,.orc-actions{display:none!important}
+    .card{box-shadow:none;padding:0}
+    @page{size:A4;margin:12mm}
+  {% endif %}
+</style>
+
+<div class="container orc-wrap">
+  <div class="card">
+    <div class="orc-head">
+      <div>
+        <div class="orc-title">Orçamento #{{ o.id }} — OS #{{ o.os_id }} · {{ o.cliente }}</div>
+        <div class="orc-meta">
+          <b>Status:</b> {{ o.status }} &nbsp;•&nbsp;
+          <b>Criado em:</b> {{ o.created_at }} &nbsp;•&nbsp;
+          <b>Validade:</b> {{ o.validade_ate or '—' }}
+        </div>
+      </div>
+      {% if not pm %}
+      <div class="orc-actions">
+        <a class="btn" href="/orcamentos/editar/{{ o.id }}">Editar</a>
+        <a class="btn" href="/orcamentos/imprimir/{{ o.id }}" target="_blank">Imprimir</a>
+        <form method="post" action="/orcamentos/excluir/{{ o.id }}" style="display:inline" onsubmit="return confirm('Excluir orçamento #{{o.id}}? Esta ação não pode ser desfeita.');">
+          <button class="btn" type="submit">Excluir</button>
+        </form>
+        <a class="btn" href="/orcamentos/listar">Voltar</a>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if o.obs_cliente %}
+      <div style="margin:6px 0 10px 0"><b>Observações (cliente):</b> {{ o.obs_cliente }}</div>
+    {% endif %}
+
+    <table class="doc">
+      <thead>
+        <tr>
+          <th>Produto / Descrição</th>
+          <th style="width:90px">Qtd</th>
+          <th style="width:120px">Unit</th>
+          <th style="width:120px">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in itens %}
+        <tr>
+          <td>{{ it.descricao }}</td>
+          <td>{{ '%.0f'|format(it.qtd or 0) }}</td>
+          <td>R$ {{ '%.2f'|format(it.preco_unit or 0) }}</td>
+          <td>R$ {{ '%.2f'|format(it.total or 0) }}</td>
+        </tr>
+        {% endfor %}
+        {% if itens|length == 0 %}
+        <tr><td colspan="4" class="muted">Sem itens.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <div class="totals">Total: R$ {{ '%.2f'|format(o.total or 0) }}</div>
+  </div>
+</div>
+
+{% if pm %}<script>window.print()</script>{% endif %}

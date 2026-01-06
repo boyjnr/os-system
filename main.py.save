@@ -1,0 +1,723 @@
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+import pdf_os_premium
+from pdf_os_premium import gerar_pdf_os_premium
+import os, sqlite3, tempfile, secrets, ipaddress
+from datetime import datetime
+from typing import Optional
+
+# PDF
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(APP_DIR, "tiextremo_os.db")
+UPLOAD_DIR = os.path.join(APP_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+app = FastAPI(title="TI Extremo OS System")
+
+# Static & templates
+app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
+
+# ------------ DB helpers ------------
+def db():
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    return con
+
+def os_code_from(id_: int, created_iso: Optional[str]) -> str:
+    try:
+        year = datetime.fromisoformat(created_iso).year if created_iso else datetime.now().year
+    except Exception:
+        year = datetime.now().year
+    return f"OS-{year}-{id_:06d}"
+
+def init_db():
+    con = db()
+    cur = con.cursor()
+    # Tabela OS
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS os (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cliente TEXT NOT NULL,
+      telefone TEXT,
+      email TEXT,
+      endereco TEXT,
+      equipamento TEXT,
+      modelo TEXT,
+      serial TEXT,
+      status TEXT,
+      problema TEXT NOT NULL,
+      anexo TEXT,
+      created_at TEXT NOT NULL,
+      os_code TEXT
+    )
+    """)
+    # Orçamentos
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS orcamento (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      os_id INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'draft',
+      subtotal REAL NOT NULL DEFAULT 0,
+      desconto REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      validade_ate TEXT,
+      obs_internas TEXT,
+      obs_cliente TEXT,
+      token_publico TEXT UNIQUE,
+      created_at TEXT NOT NULL,
+      updated_at TEXT,
+      approved_at TEXT,
+      approved_ip TEXT,
+      FOREIGN KEY(os_id) REFERENCES os(id)
+    )
+    """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS orcamento_item (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      orcamento_id INTEGER NOT NULL,
+      descricao TEXT NOT NULL,
+      qtd REAL NOT NULL DEFAULT 1,
+      preco_unit REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY(orcamento_id) REFERENCES orcamento(id)
+    )
+    """)
+    con.commit()
+
+    # Backfill os_code
+    rows = cur.execute("SELECT id, created_at, os_code FROM os").fetchall()
+    for r in rows:
+        if not r["os_code"]:
+            cur.execute("UPDATE os SET os_code = ? WHERE id = ?", (os_code_from(r["id"], r["created_at"]), r["id"]))
+    con.commit()
+    con.close()
+
+@app.on_event("startup")
+def _startup():
+    init_db()
+
+# ------------ Utils ------------
+def money(v: Optional[float]) -> str:
+    try:
+        return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except Exception:
+        return "R$ 0,00"
+
+# ------------ Rotas OS ------------
+@app.get("/", include_in_schema=False)
+def index():
+    return RedirectResponse(url="/os/nova", status_code=303)
+
+@app.get("/os/nova", response_class=HTMLResponse)
+def os_nova(request: Request):
+    return templates.TemplateResponse('os_nova.html', {'request': request, 'tema': 'claro', 'user': None})
+
+@app.post("/os/criar")
+async def os_criar(
+    request: Request,
+    cliente: str = Form(...),
+    telefone: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    endereco: Optional[str] = Form(None),
+    equipamento: Optional[str] = Form("Notebook"),
+    modelo: Optional[str] = Form(None),
+    serial: Optional[str] = Form(None),
+    status: Optional[str] = Form("Aberta"),
+    problema: str = Form(...),
+    anexo: Optional[UploadFile] = None
+):
+    if not cliente.strip() or not problema.strip():
+        return HTMLResponse("Cliente e Problema são obrigatórios.", status_code=400)
+
+    saved_path = None
+    if anexo and anexo.filename:
+        content = await anexo.read()
+        if len(content) > 5 * 1024 * 1024:
+            return HTMLResponse("Arquivo excede 5MB.", status_code=400)
+        filename = f"{int(datetime.now().timestamp())}_{anexo.filename.replace(' ', '_')}"
+        with open(os.path.join(UPLOAD_DIR, filename), "wb") as f:
+            f.write(content)
+        saved_path = filename
+
+    con = db()
+    cur = con.cursor()
+    now_iso = datetime.now().isoformat(timespec="seconds")
+    cur.execute("""
+        INSERT INTO os (cliente, telefone, email, endereco, equipamento, modelo, serial, status, problema, anexo, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (cliente, telefone, email, endereco, equipamento, modelo, serial, status, problema, saved_path, now_iso))
+    os_id = cur.lastrowid
+    # Fixar código no banco na criação
+    cur.execute("UPDATE os SET os_code = ? WHERE id = ?", (os_code_from(os_id, now_iso), os_id))
+    con.commit()
+    con.close()
+
+    return RedirectResponse(url=f"/os/ver/{os_id}", status_code=303)
+
+@app.get("/os/listar", response_class=HTMLResponse)
+def os_listar(request: Request, q: Optional[str] = None, status: Optional[str] = None):
+    q = (q or "").strip()
+    status = (status or "").strip()
+
+    sql = "SELECT * FROM os"
+    params, clauses = [], []
+    if q:
+        like = f"%{q}%"
+        clauses.append("(cliente LIKE ? OR modelo LIKE ? OR serial LIKE ?)")
+        params.extend([like, like, like])
+    if status:
+        clauses.append("COALESCE(status,'') = ?")
+        params.append(status)
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += " ORDER BY id DESC LIMIT 500"
+
+    con = db()
+    rows = [dict(r) for r in con.execute(sql, params).fetchall()]
+    con.close()
+
+    # --- orçamento vinculado à OS ---
+    orc = None
+    itens = []
+    try:
+        con2 = db(); cur2 = con2.cursor()
+        orc_row = cur2.execute(
+            "SELECT id, os_id, subtotal, desconto, total FROM orcamento WHERE os_id=? ORDER BY id DESC LIMIT 1",
+            (os_id,)
+        ).fetchone()
+        if orc_row:
+            def money(v): 
+                v = v or 0
+                return ("R$ %,.2f" % v).replace(",", "X").replace(".", ",").replace("X", ".")
+            orc = dict(orc_row)
+            if orc.get('total') is None:
+                orc['total'] = (orc.get('subtotal') or 0) - (orc.get('desconto') or 0)
+            orc['subtotal_fmt'] = money(orc.get('subtotal'))
+            orc['desconto_fmt'] = money(orc.get('desconto'))
+            orc['total_fmt']    = money(orc.get('total'))
+            rows = cur2.execute(
+                "SELECT descricao, qtd, preco_unit FROM orcamento_item WHERE orcamento_id=?",
+                (orc['id'],)
+            ).fetchall()
+            for r in rows:
+                d = dict(r)
+                qtd   = d.get('qtd') or 0
+                preco = d.get('preco_unit') or 0
+                total = qtd * preco
+                itens.append({
+                    'descricao': d.get('descricao'),
+                    'qtd': qtd,
+                    'preco_fmt': money(preco),
+                    'total_fmt': money(total),
+                })
+        con2.close()
+    except Exception:
+        try: con2.close()
+        except Exception: pass
+
+
+    statuses = ["Aberta", "Em diagnóstico", "Aguardando aprovação", "Aprovada", "Em serviço", "Pronta", "Entregue", "Cancelada"]
+    return templates.TemplateResponse("listar_os.html", {
+        "request": request,
+        "registros": rows,
+        "q": q,
+        "status_filtro": status,
+        "statuses": statuses
+    })
+
+@app.get("/os/ver/{os_id}", response_class=HTMLResponse)
+def os_ver(os_id: int, request: Request):
+    con = db()
+    row = con.execute("SELECT * FROM os WHERE id = ?", (os_id,)).fetchone()
+    con.close()
+    if not row:
+        return HTMLResponse("OS não encontrada.", status_code=404)
+    osd = dict(row)
+
+    # Link WhatsApp com host/porta atuais
+    wa_url = None
+    if osd.get("telefone"):
+        phone = ''.join(c for c in osd["telefone"] if c.isdigit())
+        if len(phone) >= 10:
+            pdf_path = request.url_for("os_pdf", os_id=os_id)   # ex: /os/pdf/18
+            base = str(request.base_url).rstrip('/')            # ex: http://127.0.0.1:8002
+            pdf_url = f"{base}{pdf_path}"
+            msg = (
+                f"{osd.get('cliente','')}, sua {osd.get('os_code','OS')} foi registrada na TI Extremo.%0A"
+                f"Status atual: {osd.get('status','Aberta')}.%0A"
+                f"Resumo: {osd.get('problema','')}.%0A"
+                f"PDF da OS: {pdf_url}"
+            )
+            wa_url = f"https://wa.me/55{phone}?text={msg}"
+
+    statuses = ["Aberta", "Em diagnóstico", "Aguardando aprovação", "Aprovada", "Em serviço", "Pronta", "Entregue", "Cancelada"]
+    return templates.TemplateResponse("os_ver.html", { 'orc': orc, 'itens': itens, "request": request, "os": osd, "statuses": statuses, "wa_url": wa_url})
+
+@app.post("/os/status/{os_id}")
+def os_status(os_id: int, status: str = Form(...)):
+    con = db()
+    con.execute("UPDATE os SET status = ? WHERE id = ?", (status, os_id))
+    con.commit()
+    con.close()
+    return RedirectResponse(url=f"/os/ver/{os_id}", status_code=303)
+
+@app.post("/os/duplicar/{os_id}")
+def os_duplicar(os_id: int):
+    con = db()
+    src = con.execute("SELECT cliente, telefone, email, endereco, equipamento, modelo, serial, status, problema, anexo FROM os WHERE id = ?", (os_id,)).fetchone()
+    if not src:
+        con.close()
+        return HTMLResponse("OS origem não encontrada.", status_code=404)
+    now_iso = datetime.now().isoformat(timespec="seconds")
+    cur = con.cursor()
+    cur.execute("""
+        INSERT INTO os (cliente, telefone, email, endereco, equipamento, modelo, serial, status, problema, anexo, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (*src, now_iso))
+    new_id = cur.lastrowid
+    cur.execute("UPDATE os SET os_code = ? WHERE id = ?", (os_code_from(new_id, now_iso), new_id))
+    con.commit()
+    con.close()
+    return RedirectResponse(url=f"/os/ver/{new_id}", status_code=303)
+
+# ---------- PDF OS ----------
+
+@app.get("/os/pdf/{os_id}")
+def os_pdf(os_id: int):
+    con = db()
+    row = con.execute("SELECT * FROM os WHERE id = ?", (os_id,)).fetchone()
+    con.close()
+    if not row:
+        return HTMLResponse("OS não encontrada.", status_code=404)
+    dados = dict(row)
+
+    tmpdir = tempfile.mkdtemp(prefix="os_pdf_")
+    filename = f"{dados.get('os_code','OS')}.pdf"
+    full = os.path.join(tmpdir, filename)
+    # --- carregar análise técnica p/ o PDF via env ---
+    try:
+        con = db(); cur = con.cursor()
+        cur.execute("SELECT analise_tecnica FROM os WHERE id=?", (id,))
+        row = cur.fetchone(); con.close()
+        import os as _os
+        _os.environ['ANALISE_TESTE'] = (row[0] or "") if row else ""
+    except Exception:
+        pass
+    pdf_os_premium.gerar_pdf_os_premium(dados, full)
+    return FileResponse(full, media_type="application/pdf", filename=filename)
+
+# ---------- RELATÓRIOS ----------
+@app.get("/relatorios", response_class=HTMLResponse)
+def relatorios(request: Request, days: int = 30):
+    con = db()
+    cur = con.cursor()
+    cur.execute("SELECT COALESCE(status,'Aberta') s, COUNT(*) t FROM os GROUP BY s")
+    por_status = {r[0]: r[1] for r in cur.fetchall()}
+    cur.execute("""
+        SELECT date(created_at) d, COUNT(*) t
+        FROM os
+        WHERE datetime(created_at) >= datetime('now', ?)||''
+        GROUP BY d ORDER BY d DESC LIMIT 31
+    """, (f"-{days} days",))
+    ultimos = cur.fetchall()
+    con.close()
+    return templates.TemplateResponse("relatorios.html", {
+        "request": request, "por_status": por_status, "ultimos": ultimos, "days": days
+    })
+
+@app.get("/relatorios/csv")
+def relatorios_csv(days: int = 30):
+    con = db()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT id, os_code, cliente, status, created_at, equipamento, modelo, serial
+        FROM os
+        WHERE datetime(created_at) >= datetime('now', ?)||''
+        ORDER BY id DESC
+    """, (f"-{days} days",))
+    rows = cur.fetchall()
+    con.close()
+    import io, csv
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["id","codigo","cliente","status","criada","equipamento","modelo","serial"])
+    for r in rows: w.writerow(r)
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename=\"relatorio_os_{days}d.csv\"'}
+    )
+
+# ---------- ORÇAMENTOS MVP ----------
+def _recalc_orc(orc_id: int):
+    con = db(); cur = con.cursor()
+    items = cur.execute("SELECT qtd, preco_unit FROM orcamento_item WHERE orcamento_id=?", (orc_id,)).fetchall()
+    subtotal = sum((i[0] or 0) * (i[1] or 0) for i in items)
+    desc = cur.execute("SELECT desconto FROM orcamento WHERE id=?", (orc_id,)).fetchone()[0]
+    total = max(subtotal - (desc or 0), 0)
+    cur.execute("UPDATE orcamento SET subtotal=?, total=?, updated_at=? WHERE id=?", (subtotal, total, datetime.now().isoformat(timespec="seconds"), orc_id))
+    con.commit(); con.close()
+
+@app.get("/orcamentos/listar", response_class=HTMLResponse)
+def orc_listar(request: Request, os_id: Optional[int] = None):
+    con = db(); cur = con.cursor()
+    if os_id:
+        rows = cur.execute("SELECT * FROM orcamento WHERE os_id=? ORDER BY id DESC", (os_id,)).fetchall()
+    else:
+        rows = cur.execute("SELECT * FROM orcamento ORDER BY id DESC LIMIT 200").fetchall()
+    con.close()
+    html = ["<div class='card'><div class='header'><h1>Orçamentos</h1></div>"]
+    html.append("<form method='get' class='row' style='gap:8px;margin-bottom:12px;'>"
+                "<input name='os_id' placeholder='Filtrar por OS ID' />"
+                "<button class='btn btn-secondary' type='submit'>Filtrar</button></form>")
+    if os_id:
+        html.append(f"<a class='btn btn-primary' href='/orcamentos/criar/{os_id}'>+ Novo orçamento para OS #{os_id}</a><br/><br/>")
+    html.append("<div style='overflow:auto'><table class='table'><thead><tr>"
+                "<th>ID</th><th>OS</th><th>Status</th><th>Subtotal</th><th>Desconto</th><th>Total</th><th>Ações</th>"
+                "</tr></thead><tbody>")
+    for r in rows:
+        html.append(f"<tr><td>{r['id']}</td><td>{r['os_id']}</td><td>{r['status']}</td>"
+                    f"<td>{money(r['subtotal'])}</td><td>{money(r['desconto'])}</td><td>{money(r['total'])}</td>"
+                    f"<td><a class='btn btn-secondary' href='/orcamentos/editar/{r['id']}'>Editar</a></td></tr>")
+    if not rows: html.append("<tr><td colspan='7' class='help'>Sem orçamentos.</td></tr>")
+    html.append("</tbody></table></div></div>")
+    return HTMLResponse("".join(html))
+
+@app.get("/orcamentos/os/{os_id}", response_class=HTMLResponse)
+def orc_por_os(os_id: int):
+    return RedirectResponse(url=f"/orcamentos/listar?os_id={os_id}", status_code=303)
+
+@app.get("/orcamentos/criar/{os_id}")
+def orc_criar(os_id: int):
+    con = db(); cur = con.cursor()
+    now = datetime.now().isoformat(timespec="seconds")
+    cur.execute("INSERT INTO orcamento (os_id, created_at) VALUES (?, ?)", (os_id, now))
+    orc_id = cur.lastrowid
+    con.commit(); con.close()
+    return RedirectResponse(url=f"/orcamentos/editar/{orc_id}", status_code=303)
+
+@app.get("/orcamentos/editar/{orc_id}", response_class=HTMLResponse)
+def orc_editar(request: Request, orc_id: int, msg: Optional[str] = None):
+    con = db(); cur = con.cursor()
+    orc = cur.execute("SELECT * FROM orcamento WHERE id=?", (orc_id,)).fetchone()
+    if not orc: 
+        con.close(); return HTMLResponse("Orçamento não encontrado.", status_code=404)
+    itens = cur.execute("SELECT * FROM orcamento_item WHERE orcamento_id=? ORDER BY id DESC", (orc_id,)).fetchall()
+    con.close()
+
+    html = [f"<div class='card'><div class='header'><h1>Orçamento #{orc_id} (OS #{orc['os_id']})</h1>"
+            f"<a class='btn btn-secondary' href='/orcamentos/os/{orc['os_id']}'>Voltar</a></div>"]
+    if msg: html.append(f"<div class='help'>{msg}</div>")
+    html.append("<div class='grid'>"
+                "<div class='field col-12'><label>Adicionar item</label>"
+                f"<form method='post' action='/orcamentos/add_item/{orc_id}' class='row' style='gap:8px'>"
+                "<input name='descricao' placeholder='Descrição' required style='flex:2'>"
+                "<input name='qtd' type='number' step='0.01' placeholder='Qtd' required style='width:120px'>"
+                "<input name='preco' type='number' step='0.01' placeholder='Preço' required style='width:160px'>"
+                "<button class='btn btn-primary' type='submit'>Adicionar</button></form></div>")
+
+    html.append("<div class='field col-12'><label>Itens</label>"
+                "<div style='overflow:auto'><table class='table'><thead>"
+                "<tr><th>Descrição</th><th>Qtd</th><th>Preço</th><th>Total</th><th>Ações</th></tr></thead><tbody>")
+    for it in itens:
+        html.append(f"<tr><td>{it['descricao']}</td><td>{it['qtd']}</td><td>{money(it['preco_unit'])}</td>"
+                    f"<td>{money(it['total'])}</td>"
+                    f"<td><form method='post' action='/orcamentos/rem_item/{it['id']}' onsubmit=\"return confirm('Remover item?')\">"
+                    f"<button class='btn btn-secondary'>Remover</button></form></td></tr>")
+    if not itens: html.append("<tr><td colspan='5' class='help'>Sem itens.</td></tr>")
+    html.append("</tbody></table></div></div>")
+
+    html.append(f"<div class='field col-6'><label>Subtotal</label><div><b>{money(orc['subtotal'])}</b></div></div>"
+                f"<div class='field col-6'><label>Desconto</label>"
+                f"<form method='post' action='/orcamentos/set_desconto/{orc_id}' class='row' style='gap:8px'>"
+                f"<input name='desconto' type='number' step='0.01' value='{orc['desconto']}' style='width:160px'>"
+                f"<button class='btn btn-secondary'>Aplicar</button></form></div>"
+                f"<div class='field col-12'><label>Total</label><div style='font-size:20px;font-weight:800'>{money(orc['total'])}</div></div>")
+
+    # Ações: token público, PDF, status
+    token_btn = ("<form method='post' action='/orcamentos/gerar_token/{oid}' class='row'><button class='btn btn-secondary'>"
+                 "Gerar/Regenerar link público</button></form>").format(oid=orc_id)
+    link_pub = f"/o/{orc['token_publico']}" if orc['token_publico'] else None
+    if link_pub:
+        html.append(f"<div class='field col-12'><label>Link público</label>"
+                    f"<div><a class='btn btn-secondary' target='_blank' href='{link_pub}'>{link_pub}</a></div></div>")
+    else:
+        html.append(f"<div class='field col-12'><label>Link público</label><div class='help'>Nenhum token gerado.</div></div>")
+    html.append(f"<div class='hr'></div><div class='row' style='gap:8px'>"
+                f"{token_btn}"
+                f"<a class='btn btn-primary' target='_blank' href='/orcamentos/pdf/{orc_id}'>📄 PDF do orçamento</a>"
+                "</div>")
+
+    html.append("</div></div>")
+    return HTMLResponse("".join(html))
+
+@app.post("/orcamentos/add_item/{orc_id}")
+def orc_add_item(orc_id: int, descricao: str = Form(...), qtd: float = Form(...), preco: float = Form(...)):
+    con = db(); cur = con.cursor()
+    cur.execute("INSERT INTO orcamento_item (orcamento_id, descricao, qtd, preco_unit, total) VALUES (?,?,?,?,?)",
+                (orc_id, descricao, qtd, preco, qtd*preco))
+    con.commit(); con.close()
+    _recalc_orc(orc_id)
+    return RedirectResponse(url=f"/orcamentos/editar/{orc_id}", status_code=303)
+
+@app.post("/orcamentos/rem_item/{item_id}")
+def orc_rem_item(item_id: int):
+    con = db(); cur = con.cursor()
+    row = cur.execute("SELECT orcamento_id FROM orcamento_item WHERE id=?", (item_id,)).fetchone()
+    if not row: 
+        con.close(); return HTMLResponse("Item não encontrado.", status_code=404)
+    orc_id = row[0]
+    cur.execute("DELETE FROM orcamento_item WHERE id=?", (item_id,))
+    con.commit(); con.close()
+    _recalc_orc(orc_id)
+    return RedirectResponse(url=f"/orcamentos/editar/{orc_id}", status_code=303)
+
+@app.post("/orcamentos/set_desconto/{orc_id}")
+def orc_set_desconto(orc_id: int, desconto: float = Form(0.0)):
+    con = db(); cur = con.cursor()
+    cur.execute("UPDATE orcamento SET desconto=? WHERE id=?", (desconto, orc_id))
+    con.commit(); con.close()
+    _recalc_orc(orc_id)
+    return RedirectResponse(url=f"/orcamentos/editar/{orc_id}", status_code=303)
+
+@app.post("/orcamentos/gerar_token/{orc_id}")
+def orc_gerar_token(orc_id: int):
+    token = secrets.token_urlsafe(12)
+    con = db(); cur = con.cursor()
+    cur.execute("UPDATE orcamento SET token_publico=? WHERE id=?", (token, orc_id))
+    con.commit(); con.close()
+    return RedirectResponse(url=f"/orcamentos/editar/{orc_id}?msg=Token%20gerado", status_code=303)
+
+@app.get("/o/{token}", response_class=HTMLResponse)
+def orc_publico(request: Request, token: str):
+    con = db(); cur = con.cursor()
+    orc = cur.execute("SELECT * FROM orcamento WHERE token_publico=?", (token,)).fetchone()
+    if not orc: 
+        con.close(); return HTMLResponse("Orçamento não encontrado.", status_code=404)
+    itens = cur.execute("SELECT * FROM orcamento_item WHERE orcamento_id=?", (orc["id"],)).fetchall()
+    os_row = cur.execute("SELECT os_code, cliente FROM os WHERE id=?", (orc["os_id"],)).fetchone()
+    con.close()
+    html = [f"<div style='max-width:860px;margin:30px auto;font-family:system-ui,Segoe UI,Arial'>"
+            f"<h2>Orçamento #{orc['id']} — {os_row['os_code']}</h2>"
+            f"<div style='margin:6px 0 18px;color:#555'>Cliente: <b>{os_row['cliente']}</b></div>"]
+    html.append("<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse;width:100%'>"
+                "<tr><th align='left'>Descrição</th><th>Qtd</th><th>Preço</th><th>Total</th></tr>")
+    for it in itens:
+        html.append(f"<tr><td>{it['descricao']}</td><td align='center'>{it['qtd']}</td>"
+                    f"<td align='right'>{money(it['preco_unit'])}</td><td align='right'>{money(it['total'])}</td></tr>")
+    if not itens: html.append("<tr><td colspan='4'>Sem itens.</td></tr>")
+    html.append("</table>")
+    html.append(f"<div style='margin-top:12px;text-align:right'>"
+                f"Subtotal: <b>{money(orc['subtotal'])}</b><br>"
+                f"Desconto: <b>{money(orc['desconto'])}</b><br>"
+                f"Total: <span style='font-size:20px;font-weight:800'>{money(orc['total'])}</span></div>")
+    if orc["approved_at"]:
+        html.append(f"<div style='margin-top:16px;padding:10px;border:1px solid #16a34a;color:#166534;background:#dcfce7'>"
+                    f"Aprovado em {orc['approved_at']} (IP {orc['approved_ip']})</div>")
+    else:
+        html.append(f"<form method='post' action='/o/{token}/aprovar' style='margin-top:16px'>"
+                    f"<button style='padding:10px 14px;border:0;background:#16a34a;color:#fff;border-radius:8px;cursor:pointer'>Aprovar orçamento</button>"
+                    f"</form>")
+    html.append("</div>")
+    return HTMLResponse("".join(html))
+
+@app.post("/o/{token}/aprovar")
+def orc_publico_aprovar(request: Request, token: str):
+    con = db(); cur = con.cursor()
+    orc = cur.execute("SELECT id FROM orcamento WHERE token_publico=?", (token,)).fetchone()
+    if not orc: 
+        con.close(); return HTMLResponse("Orçamento não encontrado.", status_code=404)
+    ip = request.client.host if request.client else "-"
+    try:
+        ipaddress.ip_address(ip)
+    except Exception:
+        ip = "-"
+    cur.execute("UPDATE orcamento SET status='approved', approved_at=?, approved_ip=? WHERE id=?", 
+                (datetime.now().isoformat(timespec="seconds"), ip, orc["id"]))
+    con.commit(); con.close()
+    return RedirectResponse(url=f"/o/{token}", status_code=303)
+
+# PDF do orçamento
+def gerar_pdf_orc(orc: sqlite3.Row, itens: list, os_row: sqlite3.Row, destino: str):
+    W, H = A4; margin = 16*mm
+    c = canvas.Canvas(destino, pagesize=A4)
+
+    brand = colors.HexColor("#ee6b2f")
+    c.setFillColor(brand); c.rect(0, H-36, W, 36, stroke=0, fill=1)
+    c.setFillColor(colors.white); c.setFont("Helvetica-Bold", 14)
+    c.drawString(margin, H-22, "Proposta de Orçamento — TI Extremo")
+
+    y = H-60
+    c.setFont("Helvetica-Bold", 12); c.setFillColor(colors.black)
+    c.drawString(margin, y, f"OS {os_row['os_code']}  •  Orçamento #{orc['id']}")
+    y -= 16
+    c.setFont("Helvetica", 10)
+    c.drawString(margin, y, f"Cliente: {os_row['cliente']}"); y -= 14
+    c.drawString(margin, y, f"Status: {orc['status']}"); y -= 18
+
+    # Tabela de itens
+    c.setFont("Helvetica-Bold", 10); c.drawString(margin, y, "Itens")
+    y -= 12
+    c.setFont("Helvetica", 10)
+    for it in itens or []:
+        c.drawString(margin, y, f"- {it['descricao']} (Qtd: {it['qtd']})")
+        c.drawRightString(W-margin, y, f"{money(it['total'])}")
+        y -= 14
+
+    y -= 8
+    c.setFont("Helvetica-Bold", 10); c.drawRightString(W-margin, y, f"Subtotal: {money(orc['subtotal'])}"); y -= 14
+    c.setFont("Helvetica", 10); c.drawRightString(W-margin, y, f"Desconto: {money(orc['desconto'])}"); y -= 14
+    c.setFont("Helvetica-Bold", 14); c.drawRightString(W-margin, y, f"Total: {money(orc['total'])}")
+
+    c.showPage(); c.save()
+
+@app.get("/orcamentos/pdf/{orc_id}")
+def orc_pdf(orc_id: int):
+    con = db(); cur = con.cursor()
+    orc = cur.execute("SELECT * FROM orcamento WHERE id=?", (orc_id,)).fetchone()
+    if not orc: 
+        con.close(); return HTMLResponse("Orçamento não encontrado.", status_code=404)
+    itens = cur.execute("SELECT * FROM orcamento_item WHERE orcamento_id=?", (orc_id,)).fetchall()
+    os_row = cur.execute("SELECT os_code, cliente FROM os WHERE id=?", (orc["os_id"],)).fetchone()
+    con.close()
+
+    tmpdir = tempfile.mkdtemp(prefix="orc_pdf_")
+    filename = f"ORC_{orc_id}_{os_row['os_code']}.pdf".replace("/", "-")
+    full = os.path.join(tmpdir, filename)
+    gerar_pdf_orc(orc, itens, os_row, full)
+    return FileResponse(full, media_type="application/pdf", filename=filename)
+
+@app.get("/_debug/routes")
+def _debug_routes(request: Request):
+    host = getattr(request.client, "host", "")
+    if host not in ("127.0.0.1", "::1"):
+        return HTMLResponse("forbidden", status_code=403)
+    routes = []
+    for r in app.router.routes:
+        try:
+            routes.append({"path": r.path, "methods": sorted(list(r.methods))})
+        except Exception:
+            pass
+    import json
+    return Response(content=json.dumps(routes, ensure_ascii=False, indent=2),
+                    media_type="application/json")
+
+@app.api_route("/os/excluir/{os_id}", methods=["POST","GET"])
+def os_excluir(os_id: int):
+    con = db(); cur = con.cursor()
+    try:
+        # apaga orçamentos e itens (se tabelas existirem)
+        try:
+            orcs = cur.execute("SELECT id FROM orcamento WHERE os_id=?", (os_id,)).fetchall()
+        except Exception:
+            orcs = []
+        for o in orcs:
+            cur.execute("DELETE FROM orcamento_item WHERE orcamento_id=?", (o["id"],))
+            cur.execute("DELETE FROM orcamento WHERE id=?", (o["id"],))
+        # apaga anexo físico
+        row = cur.execute("SELECT anexo FROM os WHERE id=?", (os_id,)).fetchone()
+        if row and row["anexo"]:
+            import os
+            try:
+                os.remove(os.path.join(UPLOAD_DIR, row["anexo"]))
+            except Exception:
+                pass
+        # apaga OS
+        cur.execute("DELETE FROM os WHERE id=?", (os_id,))
+        con.commit()
+    finally:
+        con.close()
+    return RedirectResponse(url="/os/listar", status_code=303)
+
+# ====== rotas redundantes para excluir OS (GET e POST) ======
+from typing import Optional
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+def _os_delete_impl(os_id: int):
+    con = db(); cur = con.cursor()
+    try:
+        # orçamentos -> itens -> orçamento
+        try:
+            orcs = cur.execute("SELECT id FROM orcamento WHERE os_id=?", (os_id,)).fetchall()
+        except Exception:
+            orcs = []
+        for o in orcs:
+            try: cur.execute("DELETE FROM orcamento_item WHERE orcamento_id=?", (o['id'],))
+            except Exception: pass
+            cur.execute("DELETE FROM orcamento WHERE id=?", (o['id'],))
+        # anexo físico
+        row = cur.execute("SELECT anexo FROM os WHERE id=?", (os_id,)).fetchone()
+        if row and row.get("anexo"):
+            import os
+            try: os.remove(os.path.join(UPLOAD_DIR, row["anexo"]))
+            except Exception: pass
+        cur.execute("DELETE FROM os WHERE id=?", (os_id,))
+        con.commit()
+        logger.info(f"[OS] Excluída OS id={os_id}")
+    finally:
+        con.close()
+    return RedirectResponse(url="/os/listar", status_code=303)
+
+@app.api_route("/os/excluir/{os_id}", methods=["GET","POST"])
+@app.api_route("/os/{os_id}/excluir", methods=["GET","POST"])
+@app.api_route("/os/delete/{os_id}", methods=["GET","POST"])
+def os_excluir_multi(os_id: int):
+    return _os_delete_impl(os_id)
+
+# --- Lista rápida com ações (PDF/WhatsApp) ---
+import urllib.parse, os
+from fastapi.responses import HTMLResponse
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL","http://127.0.0.1:8002")
+
+@app.get("/os/lista2", response_class=HTMLResponse)
+async def os_lista2():
+    con = db(); cur = con.cursor()
+    cur.execute("SELECT id, os_code, cliente, telefone, email, status, created_at FROM os ORDER BY id DESC LIMIT 100")
+    rows = cur.fetchall(); con.close()
+    def wa_link(os_id, os_code, cliente):
+        pdf_url = f"{PUBLIC_BASE_URL}/os/pdf/{os_id}"
+        msg = f"Olá {cliente}, segue sua {os_code} da T.I. Extremo. PDF: {pdf_url}"
+        return "https://wa.me/?text=" + urllib.parse.quote(msg, safe="")
+    html=[]
+    html.append("<html><head><meta charset='utf-8'><title>OS — Lista</title>")
+    html.append("<style>body{font-family:system-ui;margin:24px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #e5e7eb}th{background:#f8fafc;text-align:left}a.btn{padding:6px 10px;border-radius:8px;text-decoration:none;color:#fff;margin-right:6px}a.pdf{background:#0ea5e9}a.wa{background:#22c55e}</style>")
+    html.append("</head><body><h2>OS — Lista (Ações rápidas)</h2>")
+    html.append("<table><thead><tr><th>#</th><th>OS</th><th>Cliente</th><th>Contato</th><th>Status</th><th>Criada</th><th>Ações</th></tr></thead><tbody>")
+    for (id_, os_code, cliente, tel, email, status, created_at) in rows:
+        contato = " / ".join([x for x in [tel or "", email or ""] if x.strip()])
+        pdf_href = f"/os/pdf/{id_}"
+        wa_href  = wa_link(id_, os_code or f"OS-{id_:06d}", (cliente or 'cliente').strip())
+        html.append(f"<tr><td>{id_}</td><td>{os_code or ''}</td><td>{(cliente or '').strip()}</td><td>{contato}</td><td>{(status or '').strip()}</td><td>{(created_at or '').replace('T',' ')}</td><td><a class='btn pdf' href='{pdf_href}' target='_blank'>Gerar PDF</a><a class='btn wa' href='{wa_href}' target='_blank'>WhatsApp</a></td></tr>")
+    html.append("</tbody></table></body></html>")
+    return HTMLResponse("".join(html))
+
+# --- Atualiza análise técnica da OS (POST /os/<id>/analise) ---
+from fastapi import Form
+@app.post("/os/{os_id}/analise")
+async def os_set_analise(os_id: int, analise: str = Form("")):
+    con = db(); cur = con.cursor()
+    cur.execute("UPDATE os SET analise_tecnica=? WHERE id=?", (analise, os_id))
+    con.commit(); con.close()
+    return RedirectResponse(url=f"/os/pdf/{os_id}", status_code=303)# --- rota PDF de Orçamento (premium) ---
+from fastapi.responses import FileResponse
+from urllib.parse import quote
+from pdf_orcamento_premium import gerar_pdf_orcamento_premium
+
+@app.get("/orcamentos/pdf/{orc_id}")
+def pdf_orcamento(orc_id: int):
+    orc = repo_get_orcamento(orc_id)            # adapte aos seus repos
+    os_dados = repo_get_os_dados(orc["os_id"])  # precisa conter os_code, cliente, telefone
+    phone = ''.join(ch for ch in os_dados.get('telefone','') if ch.isdigit())
+    msg = f"DE ACORDO — {os_dados['os_code']} — ORÇ #{orc_id} — TOTAL {orc['total']:.2f}"
+    wa = f"https://wa.me/55{phone}?text={quote(msg)}" if phone else None
+    destino = f"/tmp/ORC_{orc_id}_{os_dados['os_code']}.pdf"
+    gerar_pdf_orcamento_premium(orc, os_dados, destino, wa_link=wa)
+    return FileResponse(destino, media_type="application/pdf", filename=f"ORC_{orc_id}_{os_dados['os_code']}.pdf")

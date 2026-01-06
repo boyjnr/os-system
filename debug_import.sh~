@@ -1,0 +1,15 @@
+#!/bin/bash
+cd ~/os-system
+
+echo ">>> Testando import main.py linha por linha..."
+/home/servidorland/venv_whatsapp/bin/python3 - <<'PY'
+import traceback
+
+print(">>> Iniciando teste de import do main.py")
+try:
+    import main
+    print(">>> Import concluído sem crash")
+except Exception as e:
+    print(">>> ERRO detectado durante import:")
+    traceback.print_exc()
+PY

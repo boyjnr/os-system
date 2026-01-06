@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Editar OS - TI Extremo{% endblock %}
+{% block content %}
+
+<h2 class="mb-3" style="display:flex;align-items:center;gap:8px;">
+  <span style="color:#ff6a00;">✎</span> Editar Ordem de Serviço
+</h2>
+
+<form method="post" action="/os/editar/{{ os.id }}" enctype="multipart/form-data" style="max-width:840px;">
+  <!-- Dados do Cliente -->
+  <fieldset class="mb-3" style="border:1px solid #eee;border-radius:8px;padding:14px;">
+    <legend style="font-weight:600;color:#ff6a00;">Dados do Cliente</legend>
+
+    <div class="mb-2">
+      <label for="nome_cliente">Cliente:</label>
+      <input id="nome_cliente" name="nome_cliente" type="text" value="{{ os.nome_cliente or '' }}" required
+             style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">
+    </div>
+
+    <div class="mb-2">
+      <label for="telefone">Telefone:</label>
+      <input id="telefone" name="telefone" type="tel" value="{{ os.telefone or '' }}"
+             pattern="^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$"
+             placeholder="(11) 98844-0181"
+             style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">
+      <small style="color:#666;">Formato: (11) 98844-0181 ou 11988440181</small>
+    </div>
+
+    <div class="mb-2">
+      <label for="email">E-mail:</label>
+      <input id="email" name="email" type="email" value="{{ os.email or '' }}"
+             style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">
+    </div>
+
+    <div class="mb-2">
+      <label for="endereco">Endereço:</label>
+      <input id="endereco" name="endereco" type="text" value="{{ os.endereco or '' }}"
+             placeholder="Rua, número, bairro, cidade"
+             style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">
+    </div>
+  </fieldset>
+  <!-- Dados do Equipamento -->
+  <fieldset class="mb-3" style="border:1px solid #eee;border-radius:8px;padding:14px;">
+    <legend style="font-weight:600;color:#ff6a00;">Dados do Equipamento</legend>
+
+    <div class="mb-2">
+      <label for="equipamento">Equipamento:</label>
+      <select id="equipamento" name="equipamento"
+              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">
+        {% set eq = (os.equipamento or '')|lower %}
+        <option value="Notebook"  {% if eq == 'notebook'  %}selected{% endif %}>Notebook</option>
+        <option value="Desktop"   {% if eq == 'desktop'   %}selected{% endif %}>Desktop</option>
+        <option value="PC Gamer"  {% if eq == 'pc gamer'  %}selected{% endif %}>PC Gamer</option>
+        <option value="Outros"    {% if eq == 'outros'    %}selected{% endif %}>Outros</option>
+      </select>
+    </div>
+
+    <div class="mb-2">
+      <label for="marca_modelo">Marca/Modelo:</label>
+      <input id="marca_modelo" name="marca_modelo" type="text" value="{{ os.marca_modelo or '' }}"
+             style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">
+    </div>
+
+    <div class="mb-2">
+      <label for="numero_serie">Número de Série:</label>
+      <input id="numero_serie" name="numero_serie" type="text" value="{{ os.numero_serie or '' }}"
+             style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">
+    </div>
+
+    <div class="mb-2">
+      <label for="status_equipamento">Status do equipamento:</label>
+      <select id="status_equipamento" name="status_equipamento"
+              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">
+        {% set st = (os.status_equipamento or os.status or '')|lower %}
+        <option value="Funcionando"  {% if st == 'funcionando' %}selected{% endif %}>Funcionando</option>
+        <option value="Intermitente" {% if st == 'intermitente' %}selected{% endif %}>Intermitente</option>
+        <option value="Não liga"     {% if st in ['nao liga','não liga'] %}selected{% endif %}>Não liga</option>
+        <option value="Sem teste"    {% if st == 'sem teste' %}selected{% endif %}>Sem teste</option>
+        <option value="Em Análise"   {% if st == 'em análise' or st == 'em analise' %}selected{% endif %}>Em Análise</option>
+      </select>
+    </div>
+
+    <div class="mb-2">
+      <label for="problema_relatado">Problema Relatado:</label>
+      <textarea id="problema_relatado" name="problema_relatado" rows="3"
+                style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;">{{ os.problema_relatado or '' }}</textarea>
+    </div>
+  </fieldset>
+  <!-- Ações -->
+  <div class="mt-3" style="display:flex;gap:10px;">
+    <button type="submit" style="background:#ff6a00;border:none;padding:10px 18px;border-radius:8px;color:#fff;">
+      Salvar
+    </button>
+    <a href="/os/listar" style="padding:10px 18px;border-radius:8px;border:1px solid #ddd;color:#333;text-decoration:none;">
+      Cancelar
+    </a>
+  </div>
+</form>
+
+{% endblock %}
+<script>
+(function(){
+  function getParam(n){return new URLSearchParams(location.search).get(n)}
+  var admin = getParam('admin');
+  var fin = document.getElementById('fin-block');
+  if(fin && admin==='1'){ fin.style.display='block'; }
+  var valorBruto = (parseFloat(document.querySelector('[name=valor]')?.value)||parseFloat('{{ os.valor or os.valor_total or 0 }}')||0);
+  var inp = document.getElementById('custo_interno');
+  var out = document.getElementById('liq_preview');
+  function upd(){
+    var c = parseFloat(inp.value||'0')||0;
+    var liq = (valorBruto - c).toFixed(2);
+    if(out) out.textContent = 'R$ '+liq;
+  }
+  if(inp){ inp.addEventListener('input', upd); upd(); }
+})();
+</script>

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Relatórios — TI Extremo{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="header">
+    <h1>Relatórios</h1>
+    <a class="btn btn-secondary" href="/relatorios/csv?days={{ days }}">Baixar CSV ({{ days }} dias)</a>
+  </div>
+
+  <div class="grid">
+    <div class="field col-12">
+      <label>Resumo por status</label>
+      <div class="row" style="flex-wrap:wrap; gap:8px;">
+        {% for k,v in por_status.items() %}
+          <div style="background:#f1f5f9; color:#111; border:1px solid var(--border);
+                      border-radius:999px; padding:6px 10px; font-weight:700;">
+            {{ k }}: {{ v }}
+          </div>
+        {% else %}
+          <div class="help">Sem dados.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="field col-12">
+      <label>OS criadas — últimos {{ days }} dias</label>
+      <div style="overflow:auto;">
+        <table class="table">
+          <thead>
+            <tr><th>Data</th><th>Total</th></tr>
+          </thead>
+          <tbody>
+            {% for d,t in ultimos %}
+              <tr><td>{{ d }}</td><td>{{ t }}</td></tr>
+            {% else %}
+              <tr><td colspan="2" class="help">Sem dados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

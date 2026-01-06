@@ -1,0 +1,47 @@
+/* ===== TI Extremo OS - estilos básicos ===== */
+
+/* respeita data-theme="light|dark" no <html> */
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --fg: #111827;
+  --muted: #6b7280;
+  --card: #f8fafc;
+  --table-border: #e5e7eb;
+}
+:root[data-theme="dark"] {
+  --bg: #0b1321;
+  --fg: #e5e7eb;
+  --muted: #94a3b8;
+  --card: #111827;
+  --table-border: #1f2937;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+/* cards */
+.card { background: var(--card); border-color: var(--table-border); }
+.card-header { font-weight: 600; }
+
+/* tabelas */
+.table thead th { border-bottom-color: var(--table-border); }
+.table td, .table th { border-color: var(--table-border) !important; }
+/* links e botões */
+a { text-decoration: none; }
+.navbar-brand { letter-spacing: .2px; }
+
+/* campos */
+.form-control, .form-select {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--table-border);
+}
+.form-control::placeholder { color: var(--muted); }
+.form-control:focus, .form-select:focus {
+  border-color: #60a5fa;
+  box-shadow: none;
+}
+
+/* utilitários */
+pre { white-space: pre-wrap; word-wrap: break-word; }
