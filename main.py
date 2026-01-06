@@ -6,7 +6,10 @@ from fastapi.templating import Jinja2Templates
 from pdf_os_premium import gerar_pdf_os_premium
 from routers import financeiro
 
-import os, sqlite3, tempfile, time
+import os
+import sqlite3
+import tempfile
+import time
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 
@@ -172,10 +175,18 @@ async def os_nova_post(
 ):
     con = db()
     cur = con.cursor()
-    retry_exec(cur, """
-        INSERT INTO os (cliente, telefone, email, cep, endereco, numero, equipamento, modelo, serial, problema)
+    retry_exec(
+        cur,
+        """
+        INSERT INTO os (
+            cliente, telefone, email, cep, endereco, numero,
+            equipamento, modelo, serial, problema
+        )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (cliente, telefone, email, cep, endereco, numero, equipamento, modelo, serial, problema))
+        """,
+        (cliente, telefone, email, cep, endereco, numero,
+         equipamento, modelo, serial, problema)
+    )
     con.commit()
     os_id = cur.lastrowid
     con.close()
