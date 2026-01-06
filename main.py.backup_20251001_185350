@@ -1,0 +1,396 @@
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi import UploadFile, Form
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+import pdf_os_premium
+from pdf_os_premium import generate_os_pdf
+import os, sqlite3, tempfile, secrets, ipaddress
+from datetime import datetime
+from typing import Optional
+import gc
+
+# PDF
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(APP_DIR, "tiextremo_os.db")
+UPLOAD_DIR = os.path.join(APP_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+app = FastAPI(title="TI Extremo OS System")
+
+# Static & templates
+app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
+
+# Middleware para limpeza de memória
+@app.middleware("http")
+async def memory_cleanup_middleware(request: Request, call_next):
+    """Limpa memória periodicamente"""
+    response = await call_next(request)
+    
+    if not hasattr(app, 'request_count'):
+        app.request_count = 0
+    
+    app.request_count += 1
+    if app.request_count % 100 == 0:
+        gc.collect()
+        print(f"Garbage collection executado (requests: {app.request_count})")
+    
+    return response
+
+# ------------ DB helpers ------------
+def db():
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    return con
+
+def os_code_from(id_: int, created_iso: Optional[str]) -> str:
+    try:
+        year = datetime.fromisoformat(created_iso).year if created_iso else datetime.now().year
+    except Exception:
+        year = datetime.now().year
+    return f"OS-{year}-{id_:06d}"
+
+def init_db():
+    con = db()
+    cur = con.cursor()
+    # Tabela OS
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS os (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cliente TEXT NOT NULL,
+      telefone TEXT,
+      email TEXT,
+      equipamento TEXT,
+      problema TEXT,
+      data_criacao TEXT DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'aberta',
+      tecnico TEXT,
+      observacoes TEXT,
+      valor_total REAL DEFAULT 0.0,
+      foto_equipamento TEXT
+    )
+    """)
+    
+    # Tabela Orçamentos
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS orcamentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      os_id INTEGER NOT NULL,
+      data_criacao TEXT DEFAULT CURRENT_TIMESTAMP,
+      validade TEXT DEFAULT '30 dias',
+      status TEXT DEFAULT 'pendente',
+      observacoes TEXT,
+      FOREIGN KEY (os_id) REFERENCES os(id)
+    )
+    """)
+    
+    # Tabela Itens do Orçamento
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS orcamento_itens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      orcamento_id INTEGER NOT NULL,
+      descricao TEXT NOT NULL,
+      quantidade INTEGER DEFAULT 1,
+      valor_unitario REAL DEFAULT 0.0,
+      FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id)
+    )
+    """)
+    
+    con.commit()
+    con.close()
+
+init_db()
+
+# ------------ ROTAS ------------
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/os/nova", response_class=HTMLResponse)
+@app.get("/os/nova", response_class=HTMLResponse)
+def os_nova_form(request: Request):
+    return templates.TemplateResponse("nova_os_pro_v2.html", {"request": request})
+
+@app.post("/os/nova")
+async def os_nova_post(
+    request: Request,
+    cliente: str = Form(...),
+    telefone: str = Form(""),
+    email: str = Form(""),
+    endereco: str = Form(""),
+    equipamento: str = Form(""),
+    modelo: str = Form(""),
+    problema: str = Form(""),
+    orcamento_json: str = Form("")
+):
+    con = db()
+    cur = con.cursor()
+    
+    # Cria OS
+    cur.execute("""
+        INSERT INTO os (cliente, telefone, email, equipamento, problema, observacoes)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (cliente, telefone, email, f"{equipamento} {modelo}".strip(), problema, endereco))
+    con.commit()
+    os_id = cur.lastrowid
+    
+    # Se tem orçamento, cria
+    if orcamento_json:
+        import json
+        itens = json.loads(orcamento_json)
+        if itens:
+            cur.execute("INSERT INTO orcamentos (os_id) VALUES (?)", (os_id,))
+            orc_id = cur.lastrowid
+            
+            for item in itens:
+                cur.execute("""
+                    INSERT INTO orcamento_itens (orcamento_id, descricao, quantidade, valor_unitario)
+                    VALUES (?, ?, ?, ?)
+                """, (orc_id, item['desc'], item['qtd'], item['valor']))
+            
+            con.commit()
+    
+    con.close()
+    return RedirectResponse(url=f"/os/ver/{os_id}", status_code=303)
+
+@app.get("/os/listar", response_class=HTMLResponse)
+def os_listar(request: Request):
+    con = db()
+    cur = con.cursor()
+    rows = cur.execute("SELECT * FROM os ORDER BY id DESC").fetchall()
+    con.close()
+    
+    lista = []
+    for row in rows:
+        dados = dict(row)
+        dados["os_code"] = os_code_from(dados["id"], dados.get("data_criacao"))
+        lista.append(dados)
+    
+    return templates.TemplateResponse("listar_os.html", {
+        "request": request,
+        "os_list": lista
+    })
+
+@app.get("/os/ver/{os_id}", response_class=HTMLResponse)
+def os_ver(os_id: int, request: Request):
+    """Visualiza OS com orçamento (se houver) - VERSÃO CORRIGIDA"""
+    con = db()
+    cur = con.cursor()
+    
+    # Busca OS
+    row = cur.execute("SELECT * FROM os WHERE id=?", (os_id,)).fetchone()
+    if not row:
+        con.close()
+        return HTMLResponse("OS não encontrada", status_code=404)
+    
+    dados = dict(row)
+    dados["os_code"] = os_code_from(dados["id"], dados.get("data_criacao"))
+    
+    # Busca orçamento relacionado (pode não existir)
+    orc_row = cur.execute(
+        "SELECT * FROM orcamentos WHERE os_id=? ORDER BY id DESC LIMIT 1",
+        (os_id,)
+    ).fetchone()
+    
+    # Converte para dict ou None
+    orc = dict(orc_row) if orc_row else None
+    
+    # Se tem orçamento, busca itens
+    if orc:
+        itens = cur.execute(
+            "SELECT * FROM orcamento_itens WHERE orcamento_id=?",
+            (orc['id'],)
+        ).fetchall()
+        orc['itens'] = [dict(i) for i in itens]
+        
+        # Calcula total
+        orc['valor_total'] = sum(
+            float(i.get('quantidade', 0)) * float(i.get('valor_unitario', 0))
+            for i in orc['itens']
+        )
+    
+    con.close()
+    
+    # IMPORTANTE: Sempre passa 'orc' no contexto, mesmo que seja None
+    return templates.TemplateResponse("ver_os.html", {
+        "request": request,
+        "os": dados,
+        "orc": orc  # Template trata caso seja None
+    })
+
+@app.post("/os/editar/{os_id}")
+async def os_editar_post(
+    os_id: int,
+    cliente: str = Form(...),
+    telefone: str = Form(""),
+    status: str = Form("aberta")
+):
+    con = db()
+    cur = con.cursor()
+    cur.execute("""
+        UPDATE os SET cliente=?, telefone=?, status=? WHERE id=?
+    """, (cliente, telefone, status, os_id))
+    con.commit()
+    con.close()
+    return RedirectResponse(url=f"/os/ver/{os_id}", status_code=303)
+
+@app.get("/os/deletar/{os_id}")
+def os_deletar(os_id: int):
+    con = db()
+    cur = con.cursor()
+    cur.execute("DELETE FROM os WHERE id=?", (os_id,))
+    con.commit()
+    con.close()
+    return RedirectResponse(url="/os/listar", status_code=303)
+
+# ---------- PDF OS - VERSÃO CORRIGIDA ----------
+@app.get("/os/pdf/{os_id}")
+def os_pdf(os_id: int):
+    """Gera PDF da OS usando novo módulo"""
+    try:
+        con = db()
+        cur = con.cursor()
+        
+        # Busca OS
+        row = cur.execute("SELECT * FROM os WHERE id=?", (os_id,)).fetchone()
+        if not row:
+            con.close()
+            return HTMLResponse("OS não encontrada", status_code=404)
+        
+        dados = dict(row)
+        dados["os_code"] = os_code_from(dados["id"], dados.get("data_criacao"))
+        
+        # Busca serviços/itens se tiver
+        servicos = []
+        orc_row = cur.execute(
+            "SELECT * FROM orcamentos WHERE os_id=?", (os_id,)
+        ).fetchone()
+        
+        if orc_row:
+            itens = cur.execute(
+                "SELECT * FROM orcamento_itens WHERE orcamento_id=?",
+                (orc_row['id'],)
+            ).fetchall()
+            servicos = [dict(i) for i in itens]
+        
+        con.close()
+        
+        # Prepara dados para PDF
+        pdf_data = {
+            'id': dados['id'],
+            'cliente': dados.get('cliente', 'Não informado'),
+            'data_abertura': dados.get('data_criacao'),
+            'status': dados.get('status', 'aberta'),
+            'servicos': [
+                {
+                    'descricao': s.get('descricao', ''),
+                    'valor': float(s.get('quantidade', 1)) * float(s.get('valor_unitario', 0))
+                }
+                for s in servicos
+            ],
+            'observacoes': dados.get('observacoes', '')
+        }
+        
+        # Gera PDF usando novo módulo
+        pdf_buffer = generate_os_pdf(pdf_data)
+        
+        # Retorna PDF
+        return Response(
+            content=pdf_buffer.read(),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=OS_{os_id}.pdf"
+            }
+        )
+        
+    except Exception as e:
+        print(f"Erro ao gerar PDF: {e}")
+        return HTMLResponse(f"Erro ao gerar PDF: {str(e)}", status_code=500)
+    finally:
+        gc.collect()
+
+# ---------- ORÇAMENTOS ----------
+@app.get("/orcamento/novo")
+def orcamento_novo_form(request: Request, os_id: int):
+    return templates.TemplateResponse("novo_orcamento.html", {
+        "request": request,
+        "os_id": os_id
+    })
+
+@app.post("/orcamento/criar")
+async def orcamento_criar(
+    request: Request,
+    os_id: int = Form(...),
+    observacoes: str = Form("")
+):
+    con = db()
+    cur = con.cursor()
+    cur.execute("""
+        INSERT INTO orcamentos (os_id, observacoes)
+        VALUES (?, ?)
+    """, (os_id, observacoes))
+    con.commit()
+    orc_id = cur.lastrowid
+    con.close()
+    return RedirectResponse(url=f"/orcamento/editar/{orc_id}", status_code=303)
+
+@app.get("/orcamento/editar/{orc_id}", response_class=HTMLResponse)
+def orcamento_editar_form(request: Request, orc_id: int):
+    con = db()
+    cur = con.cursor()
+    orc = cur.execute("SELECT * FROM orcamentos WHERE id=?", (orc_id,)).fetchone()
+    itens = cur.execute("SELECT * FROM orcamento_itens WHERE orcamento_id=?", (orc_id,)).fetchall()
+    con.close()
+    
+    return templates.TemplateResponse("editar_orcamento.html", {
+        "request": request,
+        "orc": dict(orc),
+        "itens": [dict(i) for i in itens]
+    })
+
+@app.post("/orcamento/item/adicionar")
+async def orcamento_item_adicionar(
+    orcamento_id: int = Form(...),
+    descricao: str = Form(...),
+    quantidade: int = Form(1),
+    valor_unitario: float = Form(0.0)
+):
+    con = db()
+    cur = con.cursor()
+    cur.execute("""
+        INSERT INTO orcamento_itens (orcamento_id, descricao, quantidade, valor_unitario)
+        VALUES (?, ?, ?, ?)
+    """, (orcamento_id, descricao, quantidade, valor_unitario))
+    con.commit()
+    con.close()
+    return RedirectResponse(url=f"/orcamento/editar/{orcamento_id}", status_code=303)
+
+@app.post("/orcamento/aprovar/{orc_id}")
+async def orcamento_aprovar(orc_id: int):
+    con = db()
+    cur = con.cursor()
+    cur.execute("UPDATE orcamentos SET status='aprovado' WHERE id=?", (orc_id,))
+    con.commit()
+    con.close()
+    return {"success": True}
+
+# Health check
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "request_count": getattr(app, 'request_count', 0)
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8002)

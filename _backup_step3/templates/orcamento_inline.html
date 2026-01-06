@@ -1,0 +1,129 @@
+<!-- Template Jinja2 com validação segura de variáveis -->
+<div class="orcamento-section" id="orcamento-os-{{ os.id }}">
+    {% if orc is defined and orc %}
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice-dollar"></i> 
+                    Orçamento #{{ orc.id }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Data:</strong> {{ orc.data_criacao|default('N/A') }}</p>
+                        <p><strong>Validade:</strong> {{ orc.validade|default('30 dias') }}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="badge badge-{{ 'success' if orc.status == 'aprovado' else 'warning' }}">
+                                {{ orc.status|upper }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <h4>Valor Total</h4>
+                        <h3 class="text-success">
+                            R$ {{ "%.2f"|format(orc.valor_total|default(0)) }}
+                        </h3>
+                    </div>
+                </div>
+                
+                {% if orc.itens is defined and orc.itens %}
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-hover">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Descrição</th>
+                                <th class="text-center">Qtd</th>
+                                <th class="text-right">Valor Unit.</th>
+                                <th class="text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in orc.itens %}
+                            <tr>
+                                <td>{{ item.descricao|default('Sem descrição') }}</td>
+                                <td class="text-center">{{ item.quantidade|default(1) }}</td>
+                                <td class="text-right">R$ {{ "%.2f"|format(item.valor_unitario|default(0)) }}</td>
+                                <td class="text-right">R$ {{ "%.2f"|format((item.quantidade|default(1)) * (item.valor_unitario|default(0))) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                {% if orc.observacoes %}
+                <div class="alert alert-info mt-3">
+                    <strong>Observações:</strong><br>
+                    {{ orc.observacoes }}
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <a href="/orcamento/pdf/{{ orc.id }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                        <i class="fas fa-file-pdf"></i> Baixar PDF
+                    </a>
+                    {% if orc.status != 'aprovado' %}
+                    <button class="btn btn-sm btn-success" onclick="aprovarOrcamento({{ orc.id }})">
+                        <i class="fas fa-check"></i> Aprovar
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            Nenhum orçamento associado a esta OS.
+            <a href="/orcamento/novo?os_id={{ os.id }}" class="btn btn-sm btn-primary ml-2">
+                Criar Orçamento
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.orcamento-section {
+    margin-top: 20px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+</style>
+
+<script>
+function aprovarOrcamento(orcId) {
+    if (!confirm('Deseja realmente aprovar este orçamento?')) return;
+    
+    fetch(`/orcamento/aprovar/${orcId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao aprovar orçamento: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao processar solicitação');
+    });
+}
+</script>

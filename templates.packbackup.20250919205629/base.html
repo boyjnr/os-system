@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}TI Extremo{% endblock %}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
+    .header { background:#ff6600; color:#fff; padding:15px; text-align:center; }
+    .header h2 { margin:0; font-size:22px; }
+    .content { padding:20px; background:#fff; margin:20px; border-radius:8px; box-shadow:0 0 8px rgba(0,0,0,0.1);}
+    .footer { margin:20px; padding:10px; border-top:2px solid #ccc; font-size:12px; color:#333; background:#fff; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>T.I Extremo – Soluções em TI Premium</h2>
+    <p>"A melhor e mais conceituada assistência em TI.<br>
+    Garantia premium de 1 ano em todos os serviços.<br>
+    Parceria, honestidade e transparência são nosso objetivo."</p>
+    <p>Av. Eng. Luís Carlos Berrini, 1748 – CJ 2110 – São Paulo/SP<br>
+    Tel: (11) 98844-0181 | orlando@tiextremo.com.br | www.tiextremo.com.br</p>
+  </div>
+  <div class="content">
+    {% block content %}{% endblock %}
+  </div>
+  <div class="footer">
+    <b>Avisos:</b>
+    <ul>
+      <li>Esta OS refere-se apenas à abertura do chamado. O orçamento será enviado separadamente.</li>
+      <li>Equipamentos não retirados em até 90 dias poderão ser vendidos para cobertura de custos.</li>
+      <li>A garantia cobre apenas os serviços executados.</li>
+    </ul>
+    <p>🌱 Compromisso Verde: O “De acordo” ou “OK” via WhatsApp tem o mesmo valor de assinatura.</p>
+  </div>
+</body>
+</html>

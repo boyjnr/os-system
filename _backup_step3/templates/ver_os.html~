@@ -1,0 +1,67 @@
+<!-- ==== Print UX Upgrade ==== -->
+<style>
+/* Base */
+:root { --brand:#ff7a1a; --ink:#222; }
+.print-wrap{max-width:800px;margin:16px auto;background:#fff;padding:24px 28px;border:1px solid #e9e9e9;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.print-header{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.print-title{font-size:20px;font-weight:700;color:var(--ink);margin:0}
+.meta{color:#666;font-size:12px;margin-top:2px}
+.kv{display:grid;grid-template-columns:220px 1fr;gap:6px 16px;margin:10px 0}
+.kv b{color:#444}
+.hr{height:1px;background:#eee;margin:14px 0}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#f6f6f6;border:1px solid #eee;color:#444;font-size:12px}
+
+/* Botão imprimir (some na impressão) */
+.btn-print{display:inline-block;margin:8px 0 16px 0;padding:8px 14px;border-radius:8px;background:var(--brand);color:#fff;text-decoration:none;font-weight:600}
+.btn-print:hover{filter:brightness(.95)}
+
+/* @media print */
+@media print {
+  body{background:#fff}
+  .header,.nav,.footer,.btn-print{display:none !important} /* esconde topo/menus/rodapé do site */
+  .print-wrap{box-shadow:none;border:none;margin:0;padding:0}
+  a{color:#000;text-decoration:none}
+  @page{ size:A4; margin:14mm 12mm; } /* margens de impressora */
+}
+</style>
+
+{% include 'partials/orcamento_section.html' %}
+<a class="btn-print" href="javascript:window.print()">Imprimir</a>
+<!-- ==== /Print UX Upgrade ==== -->
+{% extends "base.html" %}
+{% block title %}Visualizar OS - TI Extremo{% endblock %}
+
+{% block content %}
+<div style="max-width:800px; margin:0 auto;">
+
+  <h2 style="color:#ff6600; margin-bottom:20px;">📄 Ordem de Serviço Nº {{ os.id }}</h2>
+
+  <p><b>Cliente:</b> {{ os.cliente }}</p>
+  <p><b>Telefone:</b> {{ os.telefone }}</p>
+  <p><b>E-mail:</b> {{ os.email }}</p>
+  <p><b>Endereço:</b> {{ os.endereco }}</p>
+
+  <p><b>Equipamento:</b> {{ os.equipamento }}</p>
+  <p><b>Modelo:</b> {{ os.modelo }}</p>
+  <p><b>Número de Série:</b> {{ os.numero_serie }}</p>
+  <p><b>Problema Relatado:</b> {{ os.problema }}</p>
+
+  <p><b>Status:</b> {{ os.status }}</p>
+  <p><b>Prioridade:</b> {{ os.prioridade }}</p>
+  <p><b>Valor:</b> R$ {{ os.valor }}</p>
+  <p><b>Forma de Pagamento:</b> {{ os.forma_pagamento }}</p>
+  <p><b>Parcelas:</b> {{ os.parcelas }}</p>
+  <p><b>Data Abertura:</b> {{ os.data_abertura }}</p>
+  <p><b>Data Fechamento:</b> {{ os.data_fechamento }}</p>
+
+  <div style="margin-top:20px; padding:10px; border-top:2px solid #ccc; font-size:13px;">
+    <p><b>Avisos:</b></p>
+    <ul>
+      <li>Esta OS refere-se apenas à <b>abertura do chamado</b>. O orçamento será enviado separadamente.</li>
+      <li>Equipamentos não retirados em até <b>90 dias</b> poderão ser vendidos para cobertura de custos.</li>
+      <li>A garantia cobre apenas os <b>serviços executados</b>.</li>
+    </ul>
+    <p style="margin-top:8px; font-size:12px;">🌱 <b>Compromisso Verde:</b> O “De acordo” ou “OK” via WhatsApp tem o mesmo valor de assinatura.</p>
+  </div>
+</div>
+{% endblock %}

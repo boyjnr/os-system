@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Nova OS - TI Extremo{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1);">
+  <h2 style="color:#ff6600; margin-bottom:20px;">➕ Nova Ordem de Serviço</h2>
+  <form method="post" action="/os/salvar" enctype="multipart/form-data">
+    
+    <!-- Dados do Cliente -->
+    <fieldset style="margin-bottom:20px; border:1px solid #ddd; padding:15px; border-radius:6px;">
+      <legend style="font-weight:bold; color:#333;">Dados do Cliente</legend>
+      <label for="cliente">Cliente:</label>
+      <input type="text" id="cliente" name="cliente" required placeholder="Nome completo" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;">
+
+      <label for="telefone">Telefone:</label>
+      <input type="tel" id="telefone" name="telefone" required pattern="\(\d{2}\)\s?\d{4,5}-\d{4}" placeholder="(11) 98844-9999" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;">
+
+      <label for="email">E-mail:</label>
+      <input type="email" id="email" name="email" placeholder="email@exemplo.com" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;">
+
+      <label for="endereco">Endereço:</label>
+      <input type="text" id="endereco" name="endereco" placeholder="Rua, número, bairro, cidade" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;">
+    </fieldset>
+
+    <!-- Dados do Equipamento -->
+    <fieldset style="margin-bottom:20px; border:1px solid #ddd; padding:15px; border-radius:6px;">
+      <legend style="font-weight:bold; color:#333;">Dados do Equipamento</legend>
+      <label for="equipamento">Equipamento:</label>
+      <select id="equipamento" name="equipamento" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;">
+        <option value="Notebook">Notebook</option>
+        <option value="Desktop">Desktop</option>
+        <option value="PC Gamer">PC Gamer</option>
+        <option value="Outros">Outros</option>
+      </select>
+
+      <label for="modelo">Marca/Modelo:</label>
+      <input type="text" id="modelo" name="modelo" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;">
+
+      <label for="numero_serie">Número de Série:</label>
+      <input type="text" id="numero_serie" name="numero_serie" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;">
+
+      <label for="status_equipamento">Status do Equipamento:</label>
+      <select id="status_equipamento" name="status_equipamento" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;">
+        <option value="Funcionando">Funcionando</option>
+        <option value="Intermitente">Intermitente</option>
+        <option value="NaoLiga">Não liga</option>
+        <option value="SemTeste">Sem teste</option>
+      </select>
+
+      <label for="problema">Problema Relatado:</label>
+      <textarea id="problema" name="problema" rows="4" style="width:100%; padding:8px; margin:6px 0; border:1px solid #ccc; border-radius:4px;"></textarea>
+    </fieldset>
+
+    <!-- Upload -->
+    <div style="margin-bottom:20px;">
+      <label for="anexo">Anexar Foto/Vídeo:</label><br>
+      <input type="file" id="anexo" name="anexo" accept="image/*,video/*" style="margin-top:6px;">
+      <small style="display:block; color:#666; margin-top:4px;">Tamanho máximo: 5MB</small>
+    </div>
+
+    <button type="submit" style="background:#ff6600; color:#fff; padding:10px 20px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+      Salvar OS
+    </button>
+  <!-- Aliases exigidos pelo backend -->
+  <input type="hidden" name="nome_cliente" id="nome_cliente_alias" />
+  <input type="hidden" name="marca_modelo" id="marca_modelo_alias" />
+  <input type="hidden" name="status_equipamento" id="status_equipamento_alias" />
+
+  <script>
+  (function(){
+    const form = document.querySelector("form");
+    if(!form) return;
+    form.addEventListener("submit", function(){
+      const v = id => (document.getElementById(id)?.value || "").trim();
+      // mapeia campos do front para os nomes que o backend espera
+      const a = (hid, val) => { const el = document.getElementById(hid); if(el) el.value = val; };
+      a("nome_cliente_alias",       v("cliente"));
+      a("marca_modelo_alias",       v("modelo"));
+      a("status_equipamento_alias", v("status"));
+    });
+  })();
+  </script>
+  </form>
+
+  <!-- Avisos -->
+  <div style="margin-top:25px; font-size:13px; color:#444;">
+    <b>Avisos:</b>
+    <ul style="margin-top:8px; margin-left:20px;">
+      <li>Esta OS refere-se apenas à <b>abertura do chamado</b>. O orçamento será enviado separadamente.</li>
+      <li>Equipamentos não retirados em até <b>90 dias</b> poderão ser vendidos para cobertura de custos.</li>
+      <li>A garantia cobre apenas os <b>serviços executados</b>.</li>
+    </ul>
+    <p style="margin-top:8px;">🌱 <b>Compromisso Verde:</b> O “De acordo” ou “OK” via WhatsApp tem o mesmo valor de assinatura.</p>
+  </div>
+</div>
+{% endblock %}

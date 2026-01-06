@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container"><div class="card">
+  <h2>Editar Orçamento — #{{ o.id }} · OS #{{ o.os_id }} · {{ o.cliente }}</h2>
+  <form method="post" action="/orcamentos/atualizar" id="form-orc">
+    <input type="hidden" name="orc_id" value="{{ o.id }}">
+    <div class="grid">
+      <div>
+        <label>Validade (AAAA-MM-DD)</label>
+        <input class="input" name="validade_ate" value="{{ o.validade_ate or '' }}" placeholder="2025-12-31">
+      </div>
+      <div>
+        <label>Observações (visível ao cliente)</label>
+        <input class="input" name="obs_cliente" value="{{ o.obs_cliente or '' }}" placeholder="Prazo, forma de pagamento, etc.">
+      </div>
+    </div>
+
+    <h3 style="margin-top:14px">Itens</h3>
+    <table class="table" id="itens-tbl">
+      <thead>
+        <tr>
+          <th>Produto / Descrição</th>
+          <th style="width:90px">Qtd</th>
+          <th style="width:120px">Valor Unit.</th>
+          <th style="width:120px">Total</th>
+          <th style="width:52px"></th>
+        </tr>
+      </thead>
+      <tbody id="tb">
+        {% for it in itens %}
+        <tr>
+          <td><input class="input" name="desc[]"  value="{{ it.descricao }}"></td>
+          <td><input class="input" name="qtd[]"   value="{{ '%.0f'|format(it.qtd or 0) }}"></td>
+          <td><input class="input" name="preco[]" value="{{ '%.2f'|format(it.preco_unit or 0) }}"></td>
+          <td class="cell-total">R$ {{ '%.2f'|format(it.total or 0) }}</td>
+          <td><button type="button" class="btn" onclick="delRow(this)">x</button></td>
+        </tr>
+        {% endfor %}
+        {% if itens|length == 0 %}
+        <tr>
+          <td><input class="input" name="desc[]"  placeholder="Peça/Serviço"></td>
+          <td><input class="input" name="qtd[]"   value="1"></td>
+          <td><input class="input" name="preco[]" value="0"></td>
+          <td class="cell-total">R$ 0.00</td>
+          <td><button type="button" class="btn" onclick="delRow(this)">x</button></td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <div class="grid">
+      <div></div>
+      <div>
+        <div style="text-align:right;margin-bottom:6px">Subtotal: <b id="subtotal">R$ 0,00</b></div>
+        <div style="text-align:right">Total: <b id="total">R$ 0,00</b></div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <button class="btn" type="button" onclick="addRow()">+ Adicionar linha</button>
+      <button class="btn" type="submit">Salvar Orçamento</button>
+      <a class="btn" href="/orcamentos/ver/{{ o.id }}">Cancelar</a>
+    </div>
+  </form>
+</div></div>
+
+<script>
+function fmt(v){ return (Math.round(v*100)/100).toFixed(2) }
+function recalc(){
+  let subtotal=0;
+  document.querySelectorAll('#tb tr').forEach(tr=>{
+    const qtd=parseFloat((tr.querySelector('input[name="qtd[]"]')?.value||'0').replace(',','.'))||0;
+    const prc=parseFloat((tr.querySelector('input[name="preco[]"]')?.value||'0').replace(',','.'))||0;
+    const tot=qtd*prc;
+    subtotal+=tot;
+    const cell=tr.querySelector('.cell-total'); if(cell) cell.textContent='R$ '+fmt(tot);
+  });
+  document.querySelector('#subtotal').textContent='R$ '+fmt(subtotal);
+  document.querySelector('#total').textContent='R$ '+fmt(subtotal);
+}
+function addRow(){
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input class="input" name="desc[]" placeholder="Peça/Serviço"></td>
+                <td><input class="input" name="qtd[]" value="1"></td>
+                <td><input class="input" name="preco[]" value="0"></td>
+                <td class="cell-total">R$ 0.00</td>
+                <td><button type="button" class="btn" onclick="delRow(this)">x</button></td>`;
+  document.querySelector('#tb').appendChild(tr);
+  hook(tr);
+  recalc();
+}
+function delRow(btn){ btn.closest('tr').remove(); recalc(); }
+function hook(scope){
+  (scope||document).querySelectorAll('input[name="qtd[]"],input[name="preco[]"]').forEach(i=>{
+    i.addEventListener('input', recalc);
+  });
+}
+hook(); recalc();
+</script>
+{% endblock %}

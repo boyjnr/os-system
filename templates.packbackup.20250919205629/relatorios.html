@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Relatórios{% endblock %}
+{% block content %}
+<h2>📊 Relatórios</h2>
+<form method="get" action="/os/relatorio">
+  <label>Buscar por Nome/Telefone/OS:</label>
+  <input type="text" name="q">
+  <button type="submit">Consultar</button>
+</form>
+{% if resultados %}
+<table border="1" cellspacing="0" cellpadding="5">
+  <tr><th>ID</th><th>Cliente</th><th>Equipamento</th><th>Status</th></tr>
+  {% for r in resultados %}
+  <tr>
+    <td>{{ r.id }}</td>
+    <td>{{ r.nome_cliente }}</td>
+    <td>{{ r.equipamento }}</td>
+    <td>{{ r.status }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,182 @@
+INFO:     127.0.0.1:46674 - "GET / HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:46686 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48536 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48536 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56840 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51650 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51650 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51664 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:56106 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56106 - "GET /css/os.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60868 - "GET /js/shortcuts.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60852 - "GET /js/theme.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56106 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56106 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:60884 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60884 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60884 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60884 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60884 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:60888 - "GET /relatorios HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:34192 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:55616 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55616 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55616 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55620 - "POST /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52284 - "POST /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:39330 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42582 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42582 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42582 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42586 - "POST /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:41330 - "POST /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:38204 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52022 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52032 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52032 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52040 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:37262 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37916 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44326 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:44336 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57042 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57042 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57044 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57056 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57056 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57056 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57062 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57062 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57062 - "GET /relatorios HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57062 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:57796 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57796 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57796 - "GET /os/nova HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:42900 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47536 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47546 - "POST /os/nova HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:47546 - "GET /os/ver/2381 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41516 - "GET /os/pdf/2381 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39304 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39318 - "POST /os/nova HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:39318 - "GET /os/ver/2382 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39318 - "GET /os/pdf/2382 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51908 - "GET /health HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58720 - "GET / HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:58736 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55740 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55740 - "GET /css/os.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:55742 - "GET /js/theme.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:55740 - "GET /js/shortcuts.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:55740 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55740 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55744 - "POST /os/criar HTTP/1.1" 303 See Other
+INFO:     127.0.0.1:55744 - "GET /os/ver/2383 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55744 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60092 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60092 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60092 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60092 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60092 - "GET /os/ver/2383 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60092 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60092 - "GET /os/ver/2382 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60092 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60092 - "GET /os/ver/2380 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60092 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60092 - "GET /os/ver/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60092 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:47390 - "GET /relatorios HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47390 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:47390 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47390 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48478 - "GET /os/pdf/2383 HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:48484 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48484 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48484 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48484 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48484 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48484 - "GET /css/os.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48486 - "GET /js/theme.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48484 - "GET /js/shortcuts.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48484 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48484 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+   ✔ Middleware de bloqueio /orcamentos* adicionado
+   ✔ Middleware de bloqueio /orcamentos* adicionado
+   ✔ Middleware de bloqueio /orcamentos* adicionado
+INFO:     127.0.0.1:32926 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51592 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46628 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53982 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53982 - "GET /os/ver/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53982 - "GET /os/pdf/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53994 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45824 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47476 - "GET /os/ver/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47476 - "GET /os/pdf/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47502 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33830 - "GET /os/ver/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33850 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39756 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39756 - "GET /os/ver/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39756 - "GET /os/pdf/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39774 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57130 - "GET /os/ver/2379 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60408 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47758 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47758 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47786 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36432 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59696 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56158 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48198 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48198 - "GET /os/listar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46606 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48198 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41432 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41438 - "GET /js/theme.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:41432 - "GET /css/styles.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:41432 - "GET /js/cep.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:43798 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37298 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37034 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37034 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37076 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54822 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54894 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54894 - "GET /css/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54900 - "GET /js/cep.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54894 - "GET /js/theme.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54894 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:32992 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47528 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45452 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58102 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51990 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50096 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51750 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51750 - "GET /css/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51752 - "GET /js/theme.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51752 - "GET /js/cep.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51752 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51766 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39456 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39502 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56802 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34912 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34912 - "GET /css/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34912 - "GET /js/theme.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34912 - "GET /js/cep.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34912 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:41544 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46884 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40440 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51362 - "GET /os/nova HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51362 - "GET /css/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51362 - "GET /js/theme.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51362 - "GET /js/cep.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51362 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33050 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43012 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47586 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43304 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42590 - "GET /health HTTP/1.1" 200 OK

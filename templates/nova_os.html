@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h4 mb-3">Nova OS</h2>
+
+<form method="post" action="/os/nova" enctype="multipart/form-data" class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label">Cliente *</label>
+    <input name="cliente" class="form-control" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Telefone</label>
+    <input name="telefone" class="form-control">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">E-mail</label>
+    <input name="email" type="email" class="form-control">
+  </div>
+
+  <div class="col-md-3">
+    <label class="form-label">CEP</label>
+    <input name="cep" id="cep" class="form-control" placeholder="00000-000">
+  </div>
+  <div class="col-md-7">
+    <label class="form-label">Endereço</label>
+    <input name="endereco" id="endereco" class="form-control" placeholder="Rua, Bairro - Cidade/UF">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Número</label>
+    <input name="numero" class="form-control" id="numero">
+  </div>
+
+  <div class="col-md-4">
+    <label class="form-label">Equipamento</label>
+    <input name="equipamento" class="form-control" placeholder="Notebook, Desktop, etc.">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Modelo</label>
+    <input name="modelo" class="form-control">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Serial/Service Tag</label>
+    <input name="serial" class="form-control">
+  </div>
+
+  <div class="col-12">
+    <label class="form-label">Problema / Sintomas *</label>
+    <textarea name="problema" class="form-control" rows="4" required></textarea>
+  </div>
+
+  <div class="col-12 d-flex gap-2">
+    <button class="btn btn-primary">Salvar OS</button>
+    <a class="btn btn-secondary" href="/os/listar">Cancelar</a>
+  </div>
+</form>
+
+<script>
+// placeholder para futura API de CEP (sem chamar rede agora)
+document.getElementById('cep')?.addEventListener('change', (e)=>{
+  const cep = (e.target.value || '').replace(/\D/g, '');
+  if (cep.length === 8) {
+    // futuro: fetch viacep e preencher #endereco
+    // por enquanto só formata
+    e.target.value = cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+  }
+});
+</script>
+{% endblock %}

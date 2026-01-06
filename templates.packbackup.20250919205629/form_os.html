@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Nova OS - TI Extremo{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+
+  <h2 style="color:#ff6600; margin-bottom:20px;">➕ Nova Ordem de Serviço</h2>
+
+  <form method="post" action="/os/salvar" enctype="multipart/form-data" 
+        style="background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 6px rgba(0,0,0,0.1);">
+
+    <!-- Dados do Cliente -->
+    <label>Cliente:</label><br>
+    <input type="text" name="cliente" list="clientes" required style="width:100%;margin-bottom:10px;">
+    <datalist id="clientes">
+      <option value="Orlando Ferreira">
+      <option value="Cliente TIExtremo">
+      <option value="Maria Souza">
+    </datalist>
+
+    <label>Telefone:</label><br>
+    <input type="tel" name="telefone" pattern="^\(\d{2}\) \d{4,5}-\d{4}$" 
+           placeholder="(11) 98844-0181" required style="width:100%;margin-bottom:10px;">
+
+    <label>E-mail:</label><br>
+    <input type="email" name="email" placeholder="cliente@email.com" 
+           style="width:100%;margin-bottom:10px;">
+
+    <label>Endereço:</label><br>
+    <input type="text" name="endereco" style="width:100%;margin-bottom:15px;">
+
+    <!-- Dados do Equipamento -->
+    <label>Equipamento:</label><br>
+    <select name="equipamento" style="width:100%;margin-bottom:10px;">
+      <option>Notebook</option>
+      <option>Desktop</option>
+      <option>PC Gamer</option>
+      <option>Outros</option>
+    </select>
+
+    <label>Marca/Modelo:</label><br>
+    <input type="text" name="modelo" style="width:100%;margin-bottom:10px;">
+
+    <label>Número de Série:</label><br>
+    <input type="text" name="numero_serie" style="width:100%;margin-bottom:15px;">
+
+    <!-- Status inicial -->
+    <label>Status do equipamento:</label><br>
+    <select name="status_inicial" style="width:100%;margin-bottom:15px;">
+      <option>Funcionando</option>
+      <option>Intermitente</option>
+      <option>Não liga</option>
+      <option>Sem teste</option>
+    </select>
+
+    <label>Problema relatado:</label><br>
+    <textarea name="problema" rows="3" style="width:100%;margin-bottom:15px;"></textarea>
+
+    <!-- Upload -->
+    <label>Anexar foto/vídeo:</label><br>
+    <input type="file" name="anexo" accept="image/*,video/*" style="margin-bottom:20px;">
+
+    <!-- Botão -->
+    <button type="submit" 
+            style="background:#ff6600;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;">
+      Salvar OS
+    </button>
+  </form>
+
+  <!-- Avisos -->
+  <div style="margin-top:20px; padding:10px; border-top:2px solid #ccc; font-size:13px; color:#333;">
+    <p><b>Avisos:</b></p>
+    <ul style="margin:0; padding-left:18px;">
+      <li>Esta OS refere-se apenas à <b>abertura do chamado</b>. O orçamento será enviado separadamente para aprovação.</li>
+      <li>Equipamentos não retirados em até <b>90 dias</b> poderão ser vendidos para cobertura de custos.</li>
+      <li>A garantia cobre apenas os <b>serviços executados</b>.</li>
+    </ul>
+    <p style="margin-top:8px; font-size:12px;">🌱 <b>Compromisso Verde:</b> O “De acordo” ou “OK” via WhatsApp tem o mesmo valor de assinatura.</p>
+  </div>
+
+</div>
+{% endblock %}

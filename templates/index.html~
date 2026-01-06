@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-br" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T.I. Extremo — OS (staging)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script defer src="/static/js/theme.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-dark navbar-dark px-3">
+  <a class="navbar-brand fw-semibold" href="/">T.I. Extremo — OS</a>
+  <div class="ms-auto d-flex gap-2">
+    <a class="btn btn-outline-light btn-sm" href="/os/nova">Nova OS</a>
+    <a class="btn btn-outline-light btn-sm" href="/os/listar">Listar OS</a>
+    <button id="theme-toggle" class="btn btn-outline-light btn-sm" onclick="toggleTheme()">Tema</button>
+  </div>
+</nav>
+
+<main class="container py-4">
+  <div class="p-4 rounded-3 bg-body-secondary">
+    <h1 class="h4 mb-2">Ambiente de Staging</h1>
+    <p class="mb-0">Teste melhorias com segurança antes de promover para produção.</p>
+  </div>
+</main>
+</body>
+</html>

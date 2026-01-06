@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt-br" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ os.os_code }} (staging)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script defer src="/static/js/theme.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-dark navbar-dark px-3">
+  <a class="navbar-brand fw-semibold" href="/">T.I. Extremo — OS</a>
+  <div class="ms-auto d-flex gap-2">
+    <a class="btn btn-outline-light btn-sm" href="/os/nova">Nova OS</a>
+    <a class="btn btn-outline-light btn-sm" href="/os/listar">Listar OS</a>
+    <button id="theme-toggle" class="btn btn-outline-light btn-sm" onclick="toggleTheme()">Tema</button>
+  </div>
+</nav>
+
+<main class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 m-0">{{ os.os_code }}</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-secondary btn-sm" href="/os/listar">Voltar</a>
+      <a class="btn btn-warning btn-sm" href="/os/editar/{{ os.id }}">Editar</a>
+      <form method="post" action="/os/excluir/{{ os.id }}" onsubmit="return confirm('Confirma excluir esta OS?');" class="d-inline">
+        <button class="btn btn-danger btn-sm">Excluir</button>
+      </form>
+      <a class="btn btn-success btn-sm" href="/os/pdf/{{ os.id }}">PDF</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header bg-dark text-white">Cliente</div>
+        <div class="card-body">
+          <div><strong>Nome:</strong> {{ os.cliente }}</div>
+          <div><strong>Telefone:</strong> {{ os.telefone }}</div>
+          <div><strong>E-mail:</strong> {{ os.email }}</div>
+          <div><strong>CEP:</strong> {{ os.cep }}</div>
+          <div><strong>Endereço:</strong> {{ os.endereco }}</div>
+          <div><strong>Número:</strong> {{ os.numero }}</div>
+          <div><strong>Criada em:</strong> {{ os.created_at }}</div>
+          <div><strong>Status:</strong> {{ os.status }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header bg-dark text-white">Equipamento</div>
+        <div class="card-body">
+          <div><strong>Tipo:</strong> {{ os.equipamento }}</div>
+          <div><strong>Modelo:</strong> {{ os.modelo }}</div>
+          <div><strong>Serial/Service Tag:</strong> {{ os.serial }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-dark text-white">Problema / Sintomas</div>
+        <div class="card-body"><pre class="mb-0" style="white-space:pre-wrap">{{ os.problema }}</pre></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-dark text-white d-flex justify-content-between">
+      <span>Orçamento</span>
+      <small class="opacity-75">Adicione itens abaixo; o total é calculado automaticamente.</small>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th>Descrição</th><th style="width:120px">Qtd</th><th style="width:180px">V. unit (R$)</th><th style="width:180px">Total (R$)</th><th class="text-end" style="width:120px">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for it in itens %}
+            <tr>
+              <td>{{ it.descricao }}</td>
+              <td>{{ it.quantidade }}</td>
+              <td>{{ '%.2f'|format(it.valor_unitario) }}</td>
+              <td>{{ '%.2f'|format((it.quantidade or 0) * (it.valor_unitario or 0.0)) }}</td>
+              <td class="text-end">
+                <form method="post" action="/orcamento/{{ os.id }}/del_item/{{ it.id }}" onsubmit="return confirm('Remover item?');" class="d-inline">
+                  <button class="btn btn-sm btn-outline-danger">Remover</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+            <tr>
+              <form method="post" action="/orcamento/{{ os.id }}/add_item">
+                <td><input name="descricao" class="form-control" placeholder="Peça/Serviço" required></td>
+                <td><input name="quantidade" type="number" min="1" step="1" class="form-control" value="1" required></td>
+                <td><input name="valor_unitario" type="number" min="0" step="0.01" class="form-control" value="0.00" required></td>
+                <td class="text-muted">—</td>
+                <td class="text-end"><button class="btn btn-sm btn-primary">Adicionar</button></td>
+              </form>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="3" class="text-end">Subtotal:</th>
+              <th colspan="2">R$ {{ '%.2f'|format(subtotal) }}</th>
+            </tr>
+            <tr>
+              <th colspan="3" class="text-end">Desconto:</th>
+              <th colspan="2">
+                <form method="post" action="/orcamento/{{ os.id }}/desconto" class="d-flex gap-2 align-items-center">
+                  <input name="desconto" type="number" min="0" step="0.01" class="form-control" style="max-width:160px" value="{{ '%.2f'|format(desconto) }}">
+                  <button class="btn btn-outline-secondary btn-sm">Aplicar</button>
+                </form>
+              </th>
+            </tr>
+            <tr class="table-dark">
+              <th colspan="3" class="text-end">Total:</th>
+              <th colspan="2">R$ {{ '%.2f'|format(total) }}</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

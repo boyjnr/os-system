@@ -1,0 +1,42 @@
+<div style="background:#111;color:#fff;padding:6px 10px;font-weight:700">TESTE ORC HEADER — SE VOCÊ ESTÁ VENDO ISSO, ESSE TEMPLATE ESTÁ SENDO USADO</div>
+{% extends "base.html" %}
+{% block title %}Orçamentos — TI Extremo{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="header">
+    <h1>Orçamentos</h1>
+    {% if os_id %}<a class="btn btn-primary" href="/orcamentos/criar/{{ os_id }}">+ Novo orçamento para OS #{{ os_id }}</a>{% endif %}
+  </div>
+
+  <form method="get" class="row" style="gap:8px; margin-bottom:12px;">
+    <input name="os_id" placeholder="Filtrar por OS ID" value="{{ os_id or '' }}" style="max-width:200px">
+    <button class="btn btn-secondary" type="submit">Filtrar</button>
+  </form>
+
+  <div style="overflow:auto;">
+    <table class="table">
+      <thead><tr><th>ID</th><th>OS</th><th>Status</th><th>Subtotal</th><th>Desconto</th><th>Total</th><th style="text-align:right">Ações</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.os_id }}</td>
+            <td><span class="status-badge">{{ r.status }}</span></td>
+            <td>{{ money(r.subtotal) }}</td>
+            <td>{{ money(r.desconto) }}</td>
+            <td><b>{{ money(r.total) }}</b></td>
+            <td style="text-align:right">
+              <a class="btn btn-secondary" href="/orcamentos/editar/{{ r.id }}">Editar</a>
+              <form method="post" action="/orcamentos/excluir/{{ r.id }}" style="display:inline" onsubmit="return confirm('Excluir orçamento #{{ r.id }}? Isso removerá os itens.')">
+                <button class="btn btn-secondary" type="submit">Excluir</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="help">Sem orçamentos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

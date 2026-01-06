@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Editar OS{% endblock %}
+{% block content %}
+<h2>✏️ Editar Ordem de Serviço</h2>
+<form method="post" action="/os/atualizar/{{ os.id }}">
+  <label>Cliente:</label><input type="text" name="nome_cliente" value="{{ os.nome_cliente }}"><br>
+  <label>Equipamento:</label><input type="text" name="equipamento" value="{{ os.equipamento }}"><br>
+  <label>Problema:</label><textarea name="problema">{{ os.problema }}</textarea><br>
+  <label>Status:</label><input type="text" name="status" value="{{ os.status }}"><br>
+  <button type="submit">Salvar</button>
+</form>
+{% endblock %}

@@ -1,0 +1,40 @@
+<div style="display:flex;justify-content:flex-end;margin-top:10px">
+  <div style="min-width:260px">
+
+    <div style="display:flex;justify-content:space-between;padding:4px 0;color:#374151">
+      <span>Subtotal</span>
+      <strong>
+        {% if orc is defined and orc and orc.subtotal_fmt is defined %}
+          {{ orc.subtotal_fmt }}
+        {% else %}
+          {{ ('%0.2f' % (orc.subtotal or 0)).replace('.', ',') }}
+        {% endif %}
+      </strong>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:4px 0;color:#374151">
+      <span>Desconto</span>
+      <strong>
+        {% if orc is defined and orc and orc.desconto_fmt is defined %}
+          {{ orc.desconto_fmt }}
+        {% else %}
+          {{ ('%0.2f' % (orc.desconto or 0)).replace('.', ',') }}
+        {% endif %}
+      </strong>
+    </div>
+
+    <div style="height:1px;background:#e5e7eb;margin:6px 0"></div>
+
+    <div style="display:flex;justify-content:space-between;padding:6px 0;color:#0f172a;font-size:17px">
+      <span>Total</span>
+      <strong>
+        {% if orc is defined and orc and orc.total_fmt is defined %}
+          {{ orc.total_fmt }}
+        {% else %}
+          {{ ('%0.2f' % ((orc.total or ((orc.subtotal or 0) - (orc.desconto or 0))))).replace('.', ',') }}
+        {% endif %}
+      </strong>
+    </div>
+
+  </div>
+</div>

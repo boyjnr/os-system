@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-br" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}TI Extremo — ERP OS{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="/static/css/os.css" rel="stylesheet">
+  {% block head %}{% endblock %}
+  <link rel="icon" href="/favicon.ico">
+</head>
+<body>
+  <!-- Faixa de marca / contato -->
+  <div class="brandbar">
+    <div class="wrap">
+      <div class="title">T.I Extremo — Soluções em TI Premium</div>
+      <div class="meta">“Garantia premium de 1 ano em todos os serviços.” — Av. Eng. Luís Carlos Berrini, 1748 — CJ 2110 — São Paulo-SP — (11) 98844-0181 — orlando@tiextremo.com.br — www.tiextremo.com.br</div>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <div class="nav">
+    <div class="wrap">
+      <div>
+        <a href="/os/nova">Nova OS</a>
+        <a href="/os/listar">Listar OS</a>
+        
+        <a href="/relatorios">Relatórios</a>
+      </div>
+      <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()">…</button>
+    </div>
+  </div>
+
+  <!-- Conteúdo -->
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script src="/static/js/theme.js"></script>
+  {% block scripts %}{% endblock %}
+  <script src="/static/js/shortcuts.js"></script>
+  <script src="/static/js/shortcuts.js"></script>
+  <script src="/static/js/shortcuts.js"></script>
+</body>
+</html>

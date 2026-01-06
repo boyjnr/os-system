@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Ver OS{% endblock %}
+{% block content %}
+<h2>🔎 Detalhes da Ordem de Serviço</h2>
+<p><b>ID:</b> {{ os.id }}</p>
+<p><b>Cliente:</b> {{ os.nome_cliente }}</p>
+<p><b>Equipamento:</b> {{ os.equipamento }}</p>
+<p><b>Problema:</b> {{ os.problema }}</p>
+<p><b>Status:</b> {{ os.status }}</p>
+{% endblock %}

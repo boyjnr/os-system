@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-br" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nova OS (staging)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script defer src="/static/js/theme.js"></script>
+  <script defer src="/static/js/cep.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-dark navbar-dark px-3">
+  <a class="navbar-brand fw-semibold" href="/">T.I. Extremo — OS</a>
+  <div class="ms-auto d-flex gap-2">
+    <a class="btn btn-outline-light btn-sm" href="/os/nova">Nova OS</a>
+    <a class="btn btn-outline-light btn-sm" href="/os/listar">Listar OS</a>
+    <button id="theme-toggle" class="btn btn-outline-light btn-sm" onclick="toggleTheme()">Tema</button>
+  </div>
+</nav>
+
+<main class="container py-4">
+  <h1 class="h4 mb-3">Nova OS</h1>
+  <form method="post">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Cliente</label>
+        <input name="cliente" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Telefone</label>
+        <input name="telefone" class="form-control" placeholder="(11) 9....">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">E-mail</label>
+        <input name="email" class="form-control" placeholder="cliente@exemplo.com">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">CEP</label>
+        <input name="cep" id="cep" class="form-control" placeholder="00000-000">
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Endereço</label>
+        <input name="endereco" id="endereco" class="form-control" placeholder="Rua, bairro, cidade - UF">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Número</label>
+        <input name="numero" class="form-control">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Equipamento</label>
+        <input name="equipamento" class="form-control" placeholder="Notebook, Desktop...">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Modelo</label>
+        <input name="modelo" class="form-control" placeholder="Dell XPS 13...">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Serial/Service Tag</label>
+        <input name="serial" class="form-control">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Problema / Sintomas</label>
+        <textarea name="problema" class="form-control" rows="5" required></textarea>
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex gap-2">
+      <button class="btn btn-primary">Salvar</button>
+      <a href="/" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</main>
+</body>
+</html>

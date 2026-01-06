@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Orçamento #{{ orc.id }} — TI Extremo{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="header">
+    <h1>Orçamento #{{ orc.id }} <span class="help">OS #{{ orc.os_id }}</span></h1>
+    <a class="btn btn-secondary" href="/orcamentos/os/{{ orc.os_id }}">Voltar</a>
+  </div>
+
+  {% if msg %}<div class="help">{{ msg }}</div>{% endif %}
+
+  <div class="grid">
+    <div class="field col-12">
+      <label>Adicionar item</label>
+      <form method="post" action="/orcamentos/add_item/{{ orc.id }}" class="row" style="gap:8px">
+        <input name="descricao" placeholder="Descrição" required style="flex:2">
+        <input name="qtd" type="number" step="0.01" placeholder="Qtd" required style="width:120px">
+        <input name="preco" type="number" step="0.01" placeholder="Preço" required style="width:160px">
+        <button class="btn btn-primary" type="submit">Adicionar</button>
+      </form>
+    </div>
+
+    <div class="field col-12">
+      <label>Itens</label>
+      <div style="overflow:auto">
+        <table class="table">
+          <thead><tr><th>Descrição</th><th>Qtd</th><th>Preço</th><th>Total</th><th>Ações</th></tr></thead>
+          <tbody>
+            {% for it in itens %}
+              <tr>
+                <td>{{ it.descricao }}</td>
+                <td>{{ it.qtd }}</td>
+                <td>{{ money(it.preco_unit) }}</td>
+                <td><b>{{ money(it.total) }}</b></td>
+                <td>
+                  <form method="post" action="/orcamentos/rem_item/{{ it.id }}" onsubmit="return confirm('Remover item?')">
+                    <button class="btn btn-secondary">Remover</button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" class="help">Sem itens.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="field col-6">
+      <label>Subtotal</label>
+      <div><b>{{ money(orc.subtotal) }}</b></div>
+    </div>
+    <div class="field col-6">
+      <label>Desconto</label>
+      <form method="post" action="/orcamentos/set_desconto/{{ orc.id }}" class="row" style="gap:8px">
+        <input name="desconto" type="number" step="0.01" value="{{ orc.desconto }}" style="width:160px">
+        <button class="btn btn-secondary">Aplicar</button>
+      </form>
+    </div>
+
+    <div class="field col-12">
+      <label>Total</label>
+      <div style="font-size:20px;font-weight:800">{{ money(orc.total) }}</div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="field col-12">
+      <label>Link público</label>
+      {% if orc.token_publico %}
+        <div class="row" style="gap:8px">
+          <a class="btn btn-secondary" target="_blank" href="/o/{{ orc.token_publico }}">/o/{{ orc.token_publico }}</a>
+          <form method="post" action="/orcamentos/gerar_token/{{ orc.id }}">
+            <button class="btn btn-secondary">Regenerar link</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="row" style="gap:8px">
+          <div class="help">Nenhum token gerado.</div>
+          <form method="post" action="/orcamentos/gerar_token/{{ orc.id }}">
+            <button class="btn btn-secondary">Gerar link público</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="field col-12">
+      <a class="btn btn-primary" target="_blank" href="/orcamentos/pdf/{{ orc.id }}">📄 PDF do orçamento</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

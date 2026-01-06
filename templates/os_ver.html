@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h4 mb-0">{{ os.os_code }} — {{ os.cliente }}</h2>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="/os/editar/{{ os.id }}">Editar</a>
+    <a class="btn btn-success btn-sm" href="/os/pdf/{{ os.id }}">PDF</a>
+    <a class="btn btn-outline-primary btn-sm" href="/os/listar">Voltar</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Dados</div>
+      <div class="card-body">
+        <div><strong>Status:</strong> {{ os.status or "Aberta" }}</div>
+        <div><strong>Telefone:</strong> {{ os.telefone or "-" }}</div>
+        <div><strong>E-mail:</strong> {{ os.email or "-" }}</div>
+        <div><strong>CEP:</strong> {{ os.cep or "-" }}</div>
+        <div><strong>Endereço:</strong> {{ os.endereco or "-" }}{% if os.numero %}, {{ os.numero }}{% endif %}</div>
+        <div class="mt-2"><strong>Equipamento:</strong> {{ os.equipamento or "-" }}</div>
+        <div><strong>Modelo:</strong> {{ os.modelo or "-" }}</div>
+        <div><strong>Serial:</strong> {{ os.serial or "-" }}</div>
+      </div>
+    </div>
+    <div class="card mt-3">
+      <div class="card-header">Problema / Sintomas</div>
+      <div class="card-body"><pre class="mb-0">{{ os.problema }}</pre></div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Orçamento</span>
+      </div>
+      <div class="card-body">
+        {% if itens|length == 0 %}
+          <div class="alert alert-info">Nenhum item adicionado.</div>
+        {% else %}
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th class="text-end">Qtd</th>
+                  <th class="text-end">V. Unit</th>
+                  <th class="text-end">Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for it in itens %}
+                <tr>
+                  <td>{{ it.descricao }}</td>
+                  <td class="text-end">{{ it.quantidade }}</td>
+                  <td class="text-end">R$ {{ '%.2f'|format(it.valor_unitario)|replace('.',',') }}</td>
+                  <td class="text-end">
+                    R$
+                    {{ '%.2f'|format((it.quantidade or 0) * (it.valor_unitario or 0.0))|replace('.',',') }}
+                  </td>
+                  <td class="text-end">
+                    <form method="post" action="/orcamento/{{ os.id }}/del_item/{{ it.id }}" onsubmit="return confirm('Remover item?');">
+                      <button class="btn btn-outline-danger btn-sm">Excluir</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr><th colspan="3" class="text-end">Subtotal</th>
+                    <th class="text-end">R$ {{ '%.2f'|format(subtotal)|replace('.',',') }}</th><th></th></tr>
+                <tr><th colspan="3" class="text-end">Desconto</th>
+                    <th class="text-end">R$ {{ '%.2f'|format(desconto)|replace('.',',') }}</th><th></th></tr>
+                <tr><th colspan="3" class="text-end">TOTAL</th>
+                    <th class="text-end fs-5">R$ {{ '%.2f'|format(total)|replace('.',',') }}</th><th></th></tr>
+              </tfoot>
+            </table>
+          </div>
+        {% endif %}
+
+        <form class="row g-2 mt-3" method="post" action="/orcamento/{{ os.id }}/add_item">
+          <div class="col-md-6">
+            <input class="form-control" name="descricao" placeholder="Descrição" required>
+          </div>
+          <div class="col-md-2">
+            <input class="form-control" name="quantidade" type="number" min="1" value="1" required>
+          </div>
+          <div class="col-md-2">
+            <input class="form-control" name="valor_unitario" type="number" step="0.01" min="0" value="0.00" required>
+          </div>
+          <div class="col-md-2 d-grid">
+            <button class="btn btn-primary">Adicionar</button>
+          </div>
+        </form>
+
+        <form class="row g-2 mt-2" method="post" action="/orcamento/{{ os.id }}/desconto">
+          <div class="col-md-6">
+            <input class="form-control" name="desconto" type="number" step="0.01" min="0" value="{{ '%.2f'|format(desconto) }}">
+          </div>
+          <div class="col-md-6 d-grid">
+            <button class="btn btn-outline-secondary">Aplicar desconto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

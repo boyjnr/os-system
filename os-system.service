@@ -1,0 +1,15 @@
+[Unit]
+Description=OS System T.I. Extremo
+After=network.target
+
+[Service]
+Type=simple
+User=servidorland
+WorkingDirectory=/home/servidorland/os-system
+ExecStart=/home/servidorland/os-system/venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8002
+Restart=always
+RestartSec=10
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target

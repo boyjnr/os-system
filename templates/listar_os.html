@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h4 mb-3">Ordens de Serviço</h2>
+
+{% if os_list|length == 0 %}
+  <div class="alert alert-info">Nenhuma OS cadastrada. <a href="/os/nova">Criar agora</a>.</div>
+{% else %}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Código</th>
+          <th>Cliente</th>
+          <th>Equipamento</th>
+          <th>Status</th>
+          <th>Criada em</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for os in os_list %}
+        <tr>
+          <td>{{ os.id }}</td>
+          <td><a href="/os/ver/{{ os.id }}">{{ os.os_code }}</a></td>
+          <td>{{ os.cliente }}</td>
+          <td>{{ os.equipamento or "-" }}</td>
+          <td><span class="badge text-bg-info">{{ os.status or "Aberta" }}</span></td>
+          <td>{{ os.created_at }}</td>
+          <td class="text-end">
+            <a class="btn btn-outline-primary btn-sm" href="/os/ver/{{ os.id }}">Abrir</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/os/editar/{{ os.id }}">Editar</a>
+            <form method="post" action="/os/excluir/{{ os.id }}" class="d-inline" onsubmit="return confirm('Excluir OS #{{ os.id }}?');">
+              <button class="btn btn-outline-danger btn-sm">Excluir</button>
+            </form>
+            <a class="btn btn-outline-success btn-sm" href="/os/pdf/{{ os.id }}">PDF</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

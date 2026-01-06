@@ -1,0 +1,57 @@
+<div class="card mt-4">
+  <div class="card-header flex justify-between items-center">
+    <h3 class="titulo">Orçamento da OS</h3>
+    {% if os.orcamento_status %}<span class="badge">{{ os.orcamento_status }}</span>{% endif %}
+  </div>
+
+  <div class="card-content">
+    <table id="orc-itens" class="tabela w-full">
+      <thead>
+        <tr><th>Descrição</th><th>Qtd</th><th>R$ Unit.</th><th>R$ Total</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for it in (os.orcamento_itens or []) %}
+          <tr>
+            <td><input class="input it-desc"  value="{{ it.descricao or '' }}"></td>
+            <td><input class="input it-qtd"   type="number" step="1"    min="0" value="{{ it.qtd or 1 }}"></td>
+            <td><input class="input it-unit"  type="number" step="0.01" min="0" value="{{ '%.2f'|format(it.unit or 0) }}"></td>
+            <td><input class="input it-total" type="text" disabled></td>
+            <td><button type="button" class="btn btn-sm" onclick="this.closest('tr').remove();recalcTotais()">Remover</button></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="mt-2">
+      <button type="button" id="btn-add-item" class="btn">+ Adicionar item</button>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 mt-4">
+      <div>
+        <label>Subtotal (R$)</label>
+        <input id="orc-subtotal" class="input" type="text" value="{{ '%.2f'|format(os.orcamento_subtotal or 0) }}" readonly>
+      </div>
+      <div>
+        <label>Desconto (R$)</label>
+        <input id="orc-desconto" class="input" type="number" step="0.01" min="0" value="{{ '%.2f'|format(os.orcamento_desconto or 0) }}">
+      </div>
+      <div>
+        <label>Total (R$)</label>
+        <input id="orc-total" class="input" type="text" value="{{ '%.2f'|format(os.orcamento_total or 0) }}" readonly>
+      </div>
+    </div>
+
+    <div class="flex gap-2 mt-4">
+      <button class="btn btn-primary" id="btn-salvar-orcamento" type="button">Salvar orçamento</button>
+
+      <a class="btn" href="/os/{{ os.id }}/enviar_aprovacao">Enviar p/ Aprovação</a>
+      <a class="btn btn-success" href="/os/{{ os.id }}/aprovar">Aprovar</a>
+      <a class="btn btn-danger"  href="/os/{{ os.id }}/reprovar">Reprovar</a>
+
+      <a class="btn" href="/os/pdf/{{ os.id }}">Gerar PDF Orçamento</a>
+      <!-- futuro: /os/pdf_orcamento/{{ os.id }} -->
+    </div>
+  </div>
+</div>
+<script src="/static/js/orcamento.js"></script>
+<script>document.addEventListener('DOMContentLoaded',()=>wireOrcamento({{ os.id }}))</script>
