@@ -26,6 +26,9 @@ app.include_router(financeiro.router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+@app.get("/os/nova", response_class=HTMLResponse)
+def nova_os(request: Request):
+    return templates.TemplateResponse("nova_os.html", {"request": request})
 
 # =========================
 # Helpers DB
